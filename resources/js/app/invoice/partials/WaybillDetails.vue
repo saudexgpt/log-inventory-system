@@ -3,7 +3,7 @@
     <div v-if="!print_waybill">
       <div class="row">
         <div class="col-xs-12 page-header" align="center">
-          <img src="svg/logo.png" alt="Company Logo" width="50">
+          <img src="svg/logo.png" alt="Company Logo" width="150">
           <label>{{ companyName }}</label>
           <!-- <span v-if="waybill.trips.length > 0"> -->
           <span v-if="waybill.confirmed_by !== null">
@@ -56,7 +56,7 @@
                 <th>Product</th>
                 <th>Quantity</th>
                 <th>Batch No.</th>
-                <th>Expires</th>
+                <!-- <th>Expires</th> -->
               </tr>
             </thead>
             <tbody>
@@ -80,8 +80,7 @@
                 <!-- <td>{{ waybill_item.invoice.customer.user.name.toUpperCase() }}</td> -->
                 <td>{{ waybill_item.item.name }}</td>
                 <!-- <td>{{ waybill_item.item.description }}</td> -->
-                <td>{{ waybill_item.quantity+' '+formatPackageType(waybill_item.type) }}<br>
-                  <small>({{ waybill_item.quantity / waybill_item.invoice_item.quantity_per_carton }} CTN)</small>
+                <td>{{ waybill_item.quantity }}
                 </td>
                 <td>
                   <div v-for="(batch, batch_index) in waybill_item.invoice_item.batches" :key="batch_index">
@@ -90,13 +89,13 @@
                     </span>
                   </div>
                 </td>
-                <td>
+                <!-- <td>
                   <div v-for="(batch, batch_index) in waybill_item.invoice_item.batches" :key="batch_index">
                     <span v-if="batch.to_supply === waybill_item.quantity">
                       {{ moment(batch.item_stock_batch.expiry_date).format('MMMM Do YYYY') }}
                     </span>
                   </div>
-                </td>
+                </td> -->
                 <!-- <td align="right">{{ currency + Number(waybill_item.rate).toLocaleString() }}</td>
                 <td>{{ waybill_item.type }}</td>
                 <td align="right">{{ currency + Number(waybill_item.amount).toLocaleString() }}</td>-->
