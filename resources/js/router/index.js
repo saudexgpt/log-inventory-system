@@ -18,7 +18,7 @@ import errorRoutes from './modules/error';
 // import permissionRoutes from './modules/permission';
 import WarehouseRoutes from './modules/warehouse';
 import InBoundRoutes from './modules/in-bound';
-// import OrderRoutes from './modules/orders';
+import OrderRoutes from './modules/orders';
 import OutBoundRoutes from './modules/out-bound';
 import LogisticsRoutes from './modules/logistics';
 import ReportsRoutes from './modules/reports';
@@ -168,8 +168,8 @@ export const constantRoutes = [{
 ];
 
 export const asyncRoutes = [
-  // OrderRoutes,
   InBoundRoutes,
+  OrderRoutes,
   OutBoundRoutes,
   TransfersRoutes,
   WarehouseRoutes,
@@ -271,7 +271,7 @@ export const asyncRoutes = [
 ];
 
 const createRouter = () => new Router({
-  // mode: 'history', // require service support
+  mode: 'history', // require service support
   scrollBehavior: () => ({ y: 0 }),
   base: process.env.MIX_LARAVUE_PATH,
   routes: constantRoutes,

@@ -1,12 +1,12 @@
 <template>
   <div class="app-container">
     <!-- <item-details v-if="page.option== 'view_details'" :item-in-stock="returnedProduct" :page="page" /> -->
-    <add-new-returns v-if="page.option== 'add_new'" :returned-products="returned_products" :params="params" :page="page" />
+    <add-new-returns v-if="page.option== 'add_new'" :returned-products="returned_products" :params="params" :page="page" @save="onSaveUpdate" />
 
     <edit-returns v-if="page.option== 'edit_returns'" :returned-product="returnedProduct" :params="params" :page="page" @update="onEditUpdate" />
     <div v-if="page.option=='list'" class="box">
       <div class="box-header">
-        <h4 class="box-title">List of Returned Products {{ in_warehouse }}</h4>
+        <h4 class="box-title">List of Returned Products {{ in_site }}</h4>
 
         <span class="pull-right">
           <a v-if="checkPermission(['manage returned products'])" class="btn btn-info" @click="page.option = 'add_new'"> Add New</a>
@@ -15,9 +15,9 @@
       </div>
       <div class="box-body">
         <el-col :xs="24" :sm="12" :md="12">
-          <label for="">Select Warehouse</label>
-          <el-select v-model="form.warehouse_index" placeholder="Select Warehouse" class="span" filterable @input="fetchItemStocks">
-            <el-option v-for="(warehouse, index) in warehouses" :key="index" :value="index" :label="warehouse.name" />
+          <label for="">Select Site</label>
+          <el-select v-model="form.site_index" placeholder="Select Site" class="span" filterable @input="fetchReturnedProducts">
+            <el-option v-for="(site, index) in sites" :key="index" :value="index" :label="site.name" />
 
           </el-select>
 
@@ -34,30 +34,28 @@
             {{ row.quantity_approved }} {{ row.item.package_type }}
 
           </div>
-          <div slot="expiry_date" slot-scope="{row}" :class="'alert alert-'+ expiryFlag(moment(row.expiry_date).format('x'))">
-            <span>
-              {{ moment(row.expiry_date).calendar() }}
-            </span>
-          </div>
           <div slot="created_at" slot-scope="{row}">
             {{ moment(row.created_at).calendar() }}
 
           </div>
           <div slot="confirmer.name" slot-scope="{row}">
             <div :id="row.id">
-              <div v-if="row.confirmed_by == null">
+              <!-- <div v-if="row.confirmed_by == null">
                 <a v-if="checkPermission(['audit confirm actions']) && row.stocked_by !== userId" class="btn btn-success" title="Click to confirm" @click="confirmReturnedItem(row.id);"><i class="fa fa-check" /> </a>
               </div>
               <div v-else>
                 {{ row.confirmer.name }}
-              </div>
+              </div> -->
+              {{ (row.confirmer) ? row.confirmer.name : 'Pending Approval' }}
             </div>
           </div>
           <div slot="action" slot-scope="props">
             <span>
-              <a v-if="checkPermission(['manage returned products'])" class="btn btn-primary" @click="returnedProduct=props.row; selected_row_index=props.index; page.option = 'edit_returns'"><i class="fa fa-edit" /> </a>
+              <!-- <a v-if="checkPermission(['manage returned products'])" class="btn btn-primary" @click="returnedProduct=props.row; selected_row_index=props.index; page.option = 'edit_returns'"><i class="fa fa-edit" /> </a> -->
 
               <a v-if="checkPermission(['approve returned products']) && parseInt(props.row.quantity) > parseInt(props.row.quantity_approved)" class="btn btn-default" @click="openDialog(props.row, props.index)"><i class="fa fa-check" /> </a>
+
+              <a v-if="checkPermission(['manage returned products']) && parseInt(props.row.quantity_approved) < 1" class="btn btn-danger" @click="deleteReturns(props.row.id, props.index)"><i class="fa fa-trash" /> </a>
             </span>
           </div>
 
@@ -65,7 +63,7 @@
 
       </div>
       <el-dialog
-        title="Confirm Quantity for Approval"
+        title="Enter Quantity for Approval"
         :visible.sync="dialogVisible"
         width="20%"
       >
@@ -91,26 +89,27 @@ import EditReturns from './partials/EditReturns';
 import Resource from '@/api/resource';
 // import Vue from 'vue';
 const necessaryParams = new Resource('fetch-necessary-params');
-// const fetchWarehouse = new Resource('warehouse/fetch-warehouse');
+// const fetchWarehouse = new Resource('site/fetch-site');
 const returnedProducts = new Resource('stock/returns');
 const approveReturnedProducts = new Resource('stock/returns/approve-products');
+const deleteReturns = new Resource('stock/returns/delete');
 const confirmItemReturned = new Resource('audit/confirm/returned-products');
 export default {
   components: { AddNewReturns, EditReturns },
   data() {
     return {
       dialogVisible: false,
-      warehouses: [],
+      sites: [],
       returned_products: [],
-      columns: ['action', 'confirmer.name', 'stocker.name', 'customer_name', 'item.name', 'batch_no', 'quantity', 'quantity_approved', 'expiry_date', 'reason', 'date_returned'],
+      columns: ['action', 'confirmer.name', 'stocker.name', 'item.name', 'stock.sub_batch.batch_no', 'stock.sub_batch.product_number', 'quantity', 'quantity_approved', 'reason', 'date_returned'],
 
       options: {
         headings: {
-          'confirmer.name': 'Confirmed By',
+          'confirmer.name': 'Approved By',
           'stocker.name': 'Stocked By',
           'item.name': 'Product',
-          batch_no: 'Batch No.',
-          expiry_date: 'Expiry Date',
+          'stock.sub_batch.batch_no': 'Batch No.',
+          'stock.sub_batch.product_number': 'Product No.',
           quantity: 'QTY',
           quantity_approved: 'QTY Approved',
           date_returned: 'Date Returned',
@@ -126,18 +125,18 @@ export default {
           filter: 'Search:',
         },
         // editableColumns:['name', 'category.name', 'sku'],
-        sortable: ['item.name', 'batch_no', 'expiry_date', 'date_returned'],
-        filterable: ['item.name', 'batch_no', 'expiry_date', 'date_returned'],
+        sortable: ['date_returned'],
+        filterable: ['item.name', 'stock.sub_batch.batch_no', 'stock.sub_batch.product_number', 'date_returned'],
       },
       page: {
         option: 'list',
       },
       params: {},
       form: {
-        warehouse_index: '',
-        warehouse_id: '',
+        site_index: '',
+        site_id: '',
       },
-      in_warehouse: '',
+      in_site: '',
       returnedProduct: {},
       selected_row_index: '',
       approvalForm: {
@@ -169,11 +168,11 @@ export default {
       necessaryParams.list()
         .then(response => {
           app.params = response.params;
-          app.warehouses = response.params.warehouses;
-          if (app.warehouses.length > 0) {
-            app.form.warehouse_id = app.warehouses[0];
-            app.form.warehouse_index = 0;
-            app.fetchItemStocks();
+          app.sites = response.params.sites;
+          if (app.sites.length > 0) {
+            app.form.site_id = app.sites[0];
+            app.form.site_index = 0;
+            app.fetchReturnedProducts();
           }
         });
     },
@@ -190,16 +189,16 @@ export default {
           });
       }
     },
-    fetchItemStocks() {
+    fetchReturnedProducts() {
       const app = this;
       const loader = returnedProducts.loaderShow();
 
       const param = app.form;
-      param.warehouse_id = app.warehouses[param.warehouse_index].id;
+      param.site_id = app.sites[param.site_index].id;
       returnedProducts.list(param)
         .then(response => {
           app.returned_products = response.returned_products;
-          app.in_warehouse = 'in ' + app.warehouses[param.warehouse_index].name;
+          app.in_site = 'from ' + app.sites[param.site_index].name;
           loader.hide();
         })
         .catch(error => {
@@ -208,6 +207,12 @@ export default {
         });
     },
 
+    onSaveUpdate(new_row) {
+      const app = this;
+      // app.returned_products.splice(app.returnedProduct.index-1, 1);
+      app.returned_products.unshift(new_row);
+      app.page.option = 'list';
+    },
     onEditUpdate(updated_row) {
       const app = this;
       // app.returned_products.splice(app.returnedProduct.index-1, 1);
@@ -223,29 +228,29 @@ export default {
       }
       return 'success'; // flag expiry date as green
     },
-    // confirmDelete(props) {
-    //   // this.loader();
+    confirmDelete(row, index) {
+      // this.loader();
 
-    //   const row = props.row;
-    //   const app = this;
-    //   const message = 'This delete action cannot be undone. Click OK to confirm';
-    //   if (confirm(message)) {
-    //     deleteItemInStock.destroy(row.id, row)
-    //       .then(response => {
-    //         app.returned_products.splice(row.index - 1, 1);
-    //         this.$message({
-    //           message: 'Item has been deleted',
-    //           type: 'success',
-    //         });
-    //       })
-    //       .catch(error => {
-    //         console.log(error);
-    //       });
-    //   }
-    // },
+      const app = this;
+      const message = 'This delete action cannot be undone. Click OK to confirm';
+      if (confirm(message)) {
+        deleteReturns.destroy(row.id, row)
+          .then(response => {
+            app.returned_products.splice(index - 1, 1);
+            this.$message({
+              message: 'Entry has been deleted',
+              type: 'success',
+            });
+          })
+          .catch(error => {
+            console.log(error);
+          });
+      }
+    },
     openDialog(product, selected_row_index){
       const app = this;
       app.approvalForm.product_details = product;
+      app.approvalForm.approved_quantity = product.quantity;
       app.selected_row_index = selected_row_index;
       app.dialogVisible = true;
     },
@@ -260,7 +265,7 @@ export default {
           const loader = approveReturnedProducts.loaderShow();
           approveReturnedProducts.store(param)
             .then(response => {
-              app.returned_products[app.selected_row_index - 1] = response.returned_product;
+              app.returned_products.splice(app.selected_row_index - 1, 1, response.returned_product);
               loader.hide();
             })
             .catch(error => {
@@ -269,10 +274,12 @@ export default {
             });
         } else {
           app.$alert('Please enter a value greater than zero');
+          app.approvalForm.approved_quantity = balance;
           return;
         }
       } else {
         app.$alert('Approved Quantity MUST NOT be greater than ' + balance);
+        app.approvalForm.approved_quantity = balance;
         return;
       }
     },

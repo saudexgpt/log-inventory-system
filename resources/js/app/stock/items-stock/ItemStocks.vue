@@ -3,6 +3,11 @@
     <!-- <item-details v-if="page.option== 'view_details'" :item-in-stock="itemInStock" :page="page" /> -->
     <add-new v-if="page.option== 'add_new'" :items-in-stock="items_in_stock" :params="params" :page="page" @save="onSave" />
     <edit-item v-if="page.option=='edit_item'" :items-in-stock="items_in_stock" :item-in-stock="itemInStock" :params="params" :page="page" @update="onEditUpdate" />
+
+    <div v-if="page.option== 'bulk_upload'">
+      <a class="btn btn-default" @click="page.option = 'add_new'"> Cancel</a>
+      <bulk-upload :items-in-stock="itemsInStock" :params="params" :page="page" @save="onSave" />
+    </div>
     <div v-if="page.option=='list'" class="box">
       <div class="box-header">
         <h4 class="box-title">List of Products {{ in_warehouse }}</h4>
@@ -29,28 +34,55 @@
         </div>
 
         <v-client-table v-model="items_in_stock" :columns="columns" :options="options">
+          <div slot="child_row" slot-scope="props">
+            <label>Break down of {{ props.row.item.name +' (' + props.row.batch_no + ')' }} among sites</label>
+            <aside>
+              <v-client-table
+                v-model="props.row.site_item_stocks"
+                :columns="['site.name', 'quantity', 'used', 'returned', 'balance']"
+                :options="child_options"
+              >
+                <div slot="quantity" slot-scope="{row}" class="alert alert-info">
+                  {{ row.quantity }}
+
+                </div>
+                <div slot="returned" slot-scope="{row}" class="alert alert-warning">
+                  {{ row.returned }}
+
+                </div>
+                <div slot="used" slot-scope="{row}" class="alert alert-danger">
+                  {{ row.used }}
+
+                </div>
+                <div slot="balance" slot-scope="{row}" class="alert alert-success">
+                  {{ row.balance }}
+
+                </div>
+              </v-client-table>
+            </aside>
+          </div>
           <div slot="quantity" slot-scope="{row}" class="alert alert-info">
-            {{ row.quantity }} {{ formatPackageType(row.item.package_type) }}
+            {{ row.quantity }}
 
           </div>
           <div slot="in_transit" slot-scope="{row}" class="alert alert-warning">
-            {{ row.in_transit }} {{ formatPackageType(row.item.package_type) }}
+            {{ row.in_transit }}
 
           </div>
           <div slot="supplied" slot-scope="{row}" class="alert alert-danger">
-            {{ row.supplied }} {{ formatPackageType(row.item.package_type) }}
+            {{ row.supplied }}
 
           </div>
           <div slot="reserved_for_supply" slot-scope="{row}" class="alert alert-default">
-            {{ row.reserved_for_supply }} {{ formatPackageType(row.item.package_type) }}
+            {{ row.reserved_for_supply }}
 
           </div>
           <div slot="in_stock" slot-scope="{row}" class="alert alert-primary">
-            {{ row.balance }} {{ formatPackageType(row.item.package_type) }}
+            {{ row.balance }}
 
           </div>
           <div slot="balance" slot-scope="{row}" class="alert alert-success">
-            {{ (row.balance - row.reserved_for_supply) }} {{ formatPackageType(row.item.package_type) }}
+            {{ (row.balance - row.reserved_for_supply) }}
 
           </div>
           <!-- <div slot="expiry_date" slot-scope="{row}" :class="'alert alert-'+ expiryFlag(moment(row.expiry_date).format('x'))">
@@ -72,8 +104,15 @@
             </div>
           </div>
           <div slot="action" slot-scope="props">
-            <a v-if="checkPermission(['manage item stocks', 'update item stocks'])" class="btn btn-primary" @click="itemInStock=props.row; selected_row_index=props.index; page.option = 'edit_item'"><i class="fa fa-edit" /> </a>
-            <a v-if="checkPermission(['manage item stocks', 'delete item stocks'])" class="btn btn-danger" @click="confirmDelete(props.index, props)"><i class="fa fa-trash" /> </a>
+            <div v-if="props.row.is_warehouse_transfered === 0">
+              <a v-if="checkPermission(['manage item stocks', 'update item stocks'])" class="btn btn-primary" @click="itemInStock=props.row; selected_row_index=props.index; page.option = 'edit_item'"><i class="fa fa-edit" /> </a>
+              <a v-if="checkPermission(['manage item stocks', 'delete item stocks'])" class="btn btn-danger" @click="confirmDelete(props.index, props)"><i class="fa fa-trash" /> </a>
+
+            </div>
+            <div v-else>
+              <a v-if="checkPermission(['manage item stocks', 'update item stocks'])" class="btn btn-dark"><i class="fa fa-edit" /> </a>
+              <a v-if="checkPermission(['manage item stocks', 'delete item stocks'])" class="btn btn-dark"><i class="fa fa-trash" /> </a>
+            </div>
 
             <!-- <a class="btn btn-default" @click="itemInStock=props.row; page.option = 'view_details'"><i class="fa fa-eye" /> </a> -->
             <!-- <a class="btn btn-warning" @click="itemInStock=props.row; selected_row_index=props.index; page.option = 'edit_item'"><i class="fa fa-edit" /> </a>
@@ -95,6 +134,7 @@ import checkRole from '@/utils/role';
 
 import AddNew from './partials/AddNew';
 import EditItem from './partials/EditItem';
+import BulkUpload from './partials/BulkUpload';
 // import ItemDetails from './partials/ItemDetails';
 import Resource from '@/api/resource';
 // import Vue from 'vue';
@@ -104,13 +144,19 @@ const itemsInStock = new Resource('stock/items-in-stock');
 const deleteItemInStock = new Resource('stock/items-in-stock/delete');
 const confirmItemInStock = new Resource('audit/confirm/items-in-stock');
 export default {
-  components: { AddNew, EditItem },
+  components: { AddNew, EditItem, BulkUpload },
   data() {
     return {
       warehouses: [],
       items_in_stock: [],
-      columns: ['action', 'confirmer.name', 'item.name', 'stocker.name', 'batch_no', /* 'expiry_date', */'quantity', 'in_transit', 'supplied', 'in_stock', 'reserved_for_supply', 'balance', 'created_at'],
+      columns: ['action', 'confirmer.name', 'item.name', 'part_number', 'stocker.name', 'batch_no', /* 'expiry_date', */'quantity', 'in_transit', 'supplied', 'in_stock', 'reserved_for_supply', 'balance', 'created_at'],
 
+      child_options: {
+        headings: {
+          'site.name': 'Site Name',
+          quantity: 'Quantity Stocked',
+        },
+      },
       options: {
         headings: {
           'confirmer.name': 'Confirmed By',
@@ -223,6 +269,7 @@ export default {
     onSave(data) {
       const app = this;
       app.items_in_stock = data.items_in_stock;// .unshift(updated_row);
+      app.page.option = 'list';
     },
     confirmDelete(index, props) {
       // this.loader();

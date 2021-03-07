@@ -84,7 +84,7 @@
                           <th />
                           <th>Choose Product</th>
                           <th>Quantity</th>
-                          <th>Packaging</th>
+                          <!-- <th>Packaging</th> -->
                         </tr>
                       </thead>
                       <tbody>
@@ -125,11 +125,9 @@
                               outline
                               placeholder="Quantity"
                               min="1"
-                              @input="calculateNoOfCartons(index)"
                             />
-                            ({{ request_item.no_of_cartons }} CTN)
                           </td>
-                          <td>{{ request_item.type }}</td>
+                          <!-- <td>{{ request_item.type }}</td> -->
                         </tr>
                         <tr>
                           <td align="right">Notes</td>
@@ -150,8 +148,8 @@
               <el-row :gutter="2" class="padded">
                 <el-col :xs="24" :sm="6" :md="6">
                   <el-button round type="success" @click="addNewTransferRequest">
-                    <i class="el-icon-plus" />
-                    Create Transfer Request
+                    <i class="el-icon-upload" />
+                    Save Transfer Request
                   </el-button>
                 </el-col>
               </el-row>

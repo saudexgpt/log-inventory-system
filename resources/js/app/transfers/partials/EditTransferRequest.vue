@@ -43,19 +43,29 @@
                           <th />
                           <th>Product</th>
                           <th>Quantity</th>
-                          <th>Per</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr v-for="(invoice_item, index) in transfer_request_items" :key="index">
-                          <td>{{ index + 1 }}</td>
                           <td>
-                            <span v-if="invoice_item.item">{{ invoice_item.item.name }}</span>
-                            <el-select v-model="invoice_item.item_index" filterable placeholder="Change" @input="fetchItemDetails(index)">
+                            <span>
+                              <a
+                                class="btn btn-danger btn-flat fa fa-trash"
+                                @click="removeLine(index)"
+                              />
+                              <a
+                                v-if="index + 1 === transfer_request_items.length"
+                                class="btn btn-info btn-flat fa fa-plus"
+                                @click="addLine(index)"
+                              />
+                            </span>
+                          </td>
+                          <td>
+                            <el-select v-model="invoice_item.item_id" filterable placeholder="Select Product">
                               <el-option
                                 v-for="(item, item_index) in params.items"
                                 :key="item_index"
-                                :value="item_index"
+                                :value="item.id"
                                 :label="item.name"
                               />
                             </el-select>
@@ -67,11 +77,8 @@
                               outline
                               placeholder="Quantity"
                               min="1"
-                              @input="calculateNoOfCartons(index)"
                             />
-                            ({{ invoice_item.no_of_cartons }} CTN)
                           </td>
-                          <td>{{ invoice_item.type }}</td>
                         </tr>
                         <tr v-if="fill_fields_error">
                           <td colspan="5">
@@ -82,7 +89,14 @@
                         </tr>
                         <tr>
                           <td align="right">Notes</td>
-                          <td colspan="5">{{ form.notes }}</td>
+                          <td colspan="5">
+                            <textarea
+                              v-model="form.notes"
+                              class="form-control"
+                              rows="5"
+                              placeholder="Type extra note on this invoice here..."
+                            />
+                          </td>
                         </tr>
                       </tbody>
                     </table>

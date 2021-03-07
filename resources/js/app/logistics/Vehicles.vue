@@ -2,7 +2,7 @@
   <div class="app-container">
     <span v-if="page.option==='list'">
       <a v-if="checkPermission(['manage vehicles']) && canAddNew" class="btn btn-info" @click="page.option = 'add_new'"> Add New</a>
-      <el-row>
+      <!-- <el-row>
         <el-col :xs="24" :sm="12" :md="12">
           <label for="">Select Warehouse</label>
           <el-select v-model="form.warehouse_index" placeholder="Select Warehouse" class="span" filterable @input="fetchVehicles">
@@ -12,7 +12,7 @@
 
         </el-col>
       </el-row>
-      <br>
+      <br> -->
     </span>
     <div>
       <!-- <vehicle-details v-if="page.option== 'view_details'" :vehicle-in-stock="vehicle" :page="page" /> -->
@@ -180,7 +180,7 @@ export default {
   },
 
   mounted() {
-    // this.getWarehouse();
+    this.fetchVehicles();
     this.fetchNecessaryParams();
     this.fetchDrivers();
   },
@@ -228,11 +228,11 @@ export default {
         .then(response => {
           app.params = response.params;
           app.warehouses = response.params.warehouses;
-          if (app.warehouses.length > 0) {
-            app.form.warehouse_id = app.warehouses[0].id;
-            app.form.warehouse_index = 0;
-            app.fetchVehicles();
-          }
+          // if (app.warehouses.length > 0) {
+          //   app.form.warehouse_id = app.warehouses[0].id;
+          //   app.form.warehouse_index = 0;
+          //   app.fetchVehicles();
+          // }
         });
     },
     fetchVehicles() {
@@ -240,11 +240,11 @@ export default {
       const loader = vehicleList.loaderShow();
 
       const param = app.form;
-      param.warehouse_id = app.warehouses[param.warehouse_index].id;
+      // param.warehouse_id = app.warehouses[param.warehouse_index].id;
       vehicleList.list(param)
         .then(response => {
           app.vehicles = response.vehicles;
-          app.table_title = 'LIST OF VEHICLES IN ' + app.warehouses[param.warehouse_index].name.toUpperCase();
+          app.table_title = 'LIST OF VEHICLES'; // IN ' + app.warehouses[param.warehouse_index].name.toUpperCase();
           loader.hide();
         })
         .catch(error => {

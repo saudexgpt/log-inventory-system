@@ -3,32 +3,12 @@
     <div>
       <div v-if="params" class="box">
         <div class="box-header">
-          <h4 class="box-title">Create New Invoice</h4>
+          <h4 class="box-title">Edit New Invoice</h4>
         </div>
         <div class="box-body">
           <el-form ref="form" :model="form" label-width="120px">
             <el-row :gutter="5" class="padded">
-              <el-col :xs="24" :sm="12" :md="12">
-                <label for>Invoice Number</label>
-                <el-input v-model="form.invoice_number" type="text" />
-                <label for>Warehouse</label>
-                <p v-if="form.warehouse">{{ form.warehouse.name }}</p>
-              </el-col>
-              <el-col :xs="24" :sm="12" :md="12">
-                <label for>Customer</label>
-                <el-select
-                  v-model="form.customer_id"
-                  placeholder="Select Customer"
-                  filterable
-                  class="span"
-                >
-                  <el-option
-                    v-for="(customer, customer_index) in customers"
-                    :key="customer_index"
-                    :value="customer.id"
-                    :label="(customer.user) ? customer.user.name : ''"
-                  />
-                </el-select>
+              <el-col :xs="24" :sm="8" :md="8">
                 <label for>Invoice Date</label>
                 <el-date-picker
                   v-model="form.invoice_date"
@@ -39,7 +19,47 @@
                   value-format="yyyy-MM-dd"
                   :picker-options="pickerOptions"
                 />
-                <p>{{ form.invoice_date }}</p>
+              </el-col>
+              <el-col :xs="24" :sm="8" :md="8">
+                <!-- <label for>Invoice Number</label>
+                <el-input
+                  v-model="form.invoice_number"
+                  placeholder="Will be auto generated when submitted"
+                  class="span"
+                  disabled
+                /> -->
+                <label for>Supplying Warehouse</label>
+                <el-select
+                  v-model="form.warehouse_id"
+                  placeholder="Select Warehouse"
+                  filterable
+                  class="span"
+                >
+                  <el-option
+                    v-for="(supply_warehouse, supply_warehouse_index) in params.warehouses"
+                    :key="supply_warehouse_index"
+                    :value="supply_warehouse.id"
+                    :label="supply_warehouse.name"
+                  />
+                </el-select>
+              </el-col>
+              <el-col :xs="24" :sm="8" :md="8">
+                <label for>Receiving Warehouse</label>
+                <el-select
+                  v-model="form.customer_id"
+                  placeholder="Select Warehouse"
+                  filterable
+                  class="span"
+                  @input="show_product_list = true;"
+                >
+                  <el-option
+                    v-for="(receiving_warehouse, warehouse_index) in params.warehouses"
+                    :key="warehouse_index"
+                    :value="receiving_warehouse.id"
+                    :label="receiving_warehouse.name"
+                    :disabled="form.warehouse_id===receiving_warehouse.id"
+                  />
+                </el-select>
               </el-col>
             </el-row>
             <div v-if="invoice.waybill_items.length < 1">
@@ -53,9 +73,9 @@
                           <th />
                           <th>Product</th>
                           <th>Quantity</th>
-                          <th>Rate</th>
+                          <!-- <th>Rate</th>
                           <th>Per</th>
-                          <th>Amount</th>
+                          <th>Amount</th> -->
                         </tr>
                       </thead>
                       <tbody>
@@ -74,12 +94,11 @@
                             </span>
                           </td>
                           <td>
-                            <span v-if="invoice_item.item">{{ invoice_item.item.name }}</span>
-                            <el-select v-model="invoice_item.item_index" filterable placeholder="Change" @input="fetchItemDetails(index)">
+                            <el-select v-model="invoice_item.item_id" filterable placeholder="Change">
                               <el-option
                                 v-for="(item, item_index) in params.items"
                                 :key="item_index"
-                                :value="item_index"
+                                :value="item.id"
                                 :label="item.name"
                               />
                             </el-select>
@@ -91,11 +110,9 @@
                               outline
                               placeholder="Quantity"
                               min="1"
-                              @input="calculateTotal(index); calculateNoOfCartons(index)"
                             />
-                            ({{ invoice_item.no_of_cartons }} CTN)
                           </td>
-                          <td>
+                          <!-- <td>
                             <el-input
                               v-model="invoice_item.rate"
                               type="number"
@@ -107,7 +124,7 @@
                           <td align="right">
                             <el-input v-model="invoice_item.amount" type="hidden" outline />
                             {{ Number(invoice_item.amount).toLocaleString() }}
-                          </td>
+                          </td> -->
                         </tr>
                         <tr v-if="fill_fields_error">
                           <td colspan="5">
@@ -116,7 +133,7 @@
                             >Please fill all empty fields before adding another row</label>
                           </td>
                         </tr>
-                        <tr>
+                        <!-- <tr>
                           <td colspan="5" align="right">
                             <label>Subtotal</label>
                           </td>
@@ -152,7 +169,7 @@
                           <td align="right">
                             <label style="color: green">{{ Number(form.amount).toLocaleString() }}</label>
                           </td>
-                        </tr>
+                        </tr> -->
                         <tr>
                           <td align="right">Notes</td>
                           <td colspan="5">

@@ -11,7 +11,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Warehouse extends Model
 {
-    //
+    public function sites()
+    {
+        return $this->hasMany(Site::class);
+    }
     // protected $hidden = ['pivot'];
     public function users()
     {

@@ -13,7 +13,7 @@
             <el-col :xs="24" :sm="12" :md="12">
               <label for="">Select Warehouse</label>
               <el-select v-model="form.warehouse_id" placeholder="Select Warehouse" filterable class="span">
-                <el-option v-for="(warehouse, index) in params.warehouses" :key="index" :value="warehouse.id" :label="warehouse.name" :disabled="warehouse.id === 7" />
+                <el-option v-for="(warehouse, index) in params.warehouses" :key="index" :value="warehouse.id" :label="warehouse.name" :disabled="warehouse.id === 3" />
 
               </el-select>
 
@@ -31,6 +31,8 @@
               <el-input v-model="form.goods_received_note" placeholder="GRN" class="span" />
               <label for="">Quantity</label>
               <el-input v-model="form.quantity" placeholder="Quantity" class="span" @change="checkUpdatedQuantity()" />
+              <label for="">Part No.</label>
+              <el-input v-model="form.part_number" placeholder="Part No." class="span" />
 
             </el-col>
           </el-row>
@@ -85,6 +87,7 @@ export default {
         quantity: '',
         goods_received_note: '',
         batch_no: '',
+        part_number: '',
 
       },
       initial_stock: 0,

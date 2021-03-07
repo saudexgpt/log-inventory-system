@@ -14,11 +14,20 @@ const permissionRoutes = {
   children: [
     {
       path: 'view-warehouse',
-      component: () => import('@/app/warehouse/index'),
+      component: () => import('@/app/warehouse/Index'),
       name: 'ViewWarehouse',
       meta: {
         title: 'Manage Warehouse',
         permissions: ['manage warehouse'],
+      },
+    },
+    {
+      path: 'view-site',
+      component: () => import('@/app/warehouse/Site'),
+      name: 'ViewSite',
+      meta: {
+        title: 'Manage Site',
+        permissions: ['manage site'],
       },
     },
 

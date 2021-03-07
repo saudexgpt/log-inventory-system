@@ -1,11 +1,11 @@
 <template>
   <div class="app-container">
     <div v-if="page.option==='list'">
-      <router-link
+      <!-- <router-link
         v-if="checkPermission(['create invoice']) && canCreateNewInvoice"
         :to="{name:'CreateInvoice'}"
         class="btn btn-default"
-      >Create New Invoice</router-link>
+      >Create New Invoice</router-link> -->
       <el-row :gutter="10">
         <el-col :xs="24" :sm="8" :md="8">
           <label for>Select Warehouse</label>
@@ -96,7 +96,7 @@
             slot-scope="props"
           >
             <div v-if="props.row.waybill_items.length > 0">
-              <div v-if="props.row.full_waybill_generated ==='1'" class="label label-success">
+              <div v-if="props.row.full_waybill_generated ===1" class="label label-success">
                 Fully Generated
               </div>
               <div v-else class="label label-warning">
@@ -126,13 +126,13 @@
             >
               <i class="el-icon-edit" />
             </a> -->
-            <a
+            <!-- <a
               v-if="props.row.status === 'pending' && checkPermission(['update invoice'])"
               class="btn btn-warning"
               @click="invoice=props.row; page.option='edit_invoice'; selected_row_index=props.index"
             >
               <i class="el-icon-edit" />
-            </a>
+            </a> -->
             <a
               v-if="props.row.waybill_items.length < 1 && checkPermission(['delete invoice'])"
               class="btn btn-danger"
@@ -162,6 +162,8 @@
     </div>
     <div v-if="page.option==='invoice_details'">
       <a class="btn btn-danger no-print" @click="page.option='list'">Go Back</a>
+
+      <router-link v-if="checkPermission(['generate waybill'])" :to="{name:'GenerateWaybill'}" class="btn btn-default btn-small no-print"><i class="el-icon-tickets" /> Generate Waybill</router-link>
       <invoice-details
         :invoice="invoice"
         :page="page"
@@ -208,8 +210,9 @@ export default {
       columns: [
         'action',
         'invoice_number',
-        'customer.user.name',
-        'amount',
+        'order.order_number',
+        'customer.name',
+        // 'amount',
         'invoice_date',
         'created_at',
         'status',
@@ -219,13 +222,15 @@ export default {
 
       options: {
         headings: {
-          'customer.user.name': 'Customer',
+          'customer.name': 'Recipient',
           invoice_number: 'Invoice Number',
-          amount: 'Amount',
+          'order.order_number': 'Order Number',
+          // amount: 'Amount',
           invoice_date: 'Invoice Date',
           created_at: 'Date Saved',
           status: 'Status',
           waybill_generated: 'Waybill Generated',
+          confirmed_by: 'Approved By',
 
           // id: 'S/N',
         },

@@ -37,24 +37,24 @@ const permissionRoutes = {
     //   meta: { title: 'Order Details', noCache: true, permissions: ['view order'] },
     //   hidden: true,
     // },
-    {
-      path: 'vehicle-conditions',
-      component: () => import('@/app/logistics/VehicleConditions'),
-      name: 'VehicleConditions',
-      meta: {
-        title: 'Vehicle Condition',
-        permissions: ['manage vehicle conditions'],
-      },
-    },
-    {
-      path: 'vehicle-expenses',
-      component: () => import('@/app/logistics/VehicleExpenses'),
-      name: 'VehicleExpenses',
-      meta: {
-        title: 'Vehicle Expenses',
-        permissions: ['manage vehicle expenses'],
-      },
-    },
+    // {
+    //   path: 'vehicle-conditions',
+    //   component: () => import('@/app/logistics/VehicleConditions'),
+    //   name: 'VehicleConditions',
+    //   meta: {
+    //     title: 'Vehicle Condition',
+    //     permissions: ['manage vehicle conditions'],
+    //   },
+    // },
+    // {
+    //   path: 'vehicle-expenses',
+    //   component: () => import('@/app/logistics/VehicleExpenses'),
+    //   name: 'VehicleExpenses',
+    //   meta: {
+    //     title: 'Vehicle Expenses',
+    //     permissions: ['manage vehicle expenses'],
+    //   },
+    // },
     {
       path: 'vehicle-types',
       component: () => import('@/app/logistics/VehicleTypes'),

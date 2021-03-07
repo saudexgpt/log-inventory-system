@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 
 class ItemStocksController extends Controller
 {
+
     /**
      * Display a listing of the resource.
      *
@@ -22,7 +23,7 @@ class ItemStocksController extends Controller
         $warehouse_id = $request->warehouse_id;
         // $items_in_stock = ItemStock::with(['warehouse', 'item', 'subBatches.stocker', 'subBatches.confirmer'])->where('warehouse_id', $warehouse_id)->orderBy('id', 'DESC')->get();
 
-        $items_in_stock = ItemStockSubBatch::with(['warehouse', 'item' => function ($q) {
+        $items_in_stock = ItemStockSubBatch::with(['warehouse', 'siteItemStocks.site', 'item' => function ($q) {
             $q->orderBy('name');
         }, 'stocker', 'confirmer'])->where('warehouse_id', $warehouse_id)->where(function ($q) {
             $q->where('balance', '>', '0');
@@ -38,7 +39,7 @@ class ItemStocksController extends Controller
         //
         $warehouse_id = $request->warehouse_id;
         $item_id = $request->item_id;
-        $batches_of_items_in_stock = ItemStockSubBatch::with(['confirmer', 'stocker'])->where(['warehouse_id' => $warehouse_id, 'item_id' => $item_id])->whereRaw('balance - reserved_for_supply > 0')->orderBy('expiry_date')->get();
+        $batches_of_items_in_stock = ItemStockSubBatch::with(['confirmer', 'stocker'])->where(['warehouse_id' => $warehouse_id, 'item_id' => $item_id])->whereRaw('balance - reserved_for_supply > 0')->get();
         return response()->json(compact('batches_of_items_in_stock'));
     }
 
@@ -62,7 +63,9 @@ class ItemStocksController extends Controller
     public function show(ItemStockSubBatch $item_in_stock)
     {
         //
-        $item_in_stock = $item_in_stock->with(['warehouse', 'item', 'stocker', 'confirmer'])->find($item_in_stock->id);
+        $item_in_stock = $item_in_stock->with(['warehouse', 'siteItemStocks.site', 'item' => function ($q) {
+            $q->orderBy('name');
+        }, 'stocker', 'confirmer'])->find($item_in_stock->id);
         return response()->json(compact('item_in_stock'), 200);
     }
 
@@ -85,6 +88,7 @@ class ItemStocksController extends Controller
         $bulk_data = json_decode(json_encode($request->bulk_data));
         //return $bulk_data;
         $warehouse_id = $request->warehouse_id;
+        $warehouse = Warehouse::find($warehouse_id);
         // try {
         $unsaved_products = [];
         $items_stocked = [];
@@ -93,33 +97,34 @@ class ItemStocksController extends Controller
             $item = Item::where('name', $product)->first();
             if ($item) {
                 $item_id = $item->id;
-                $quantity =  $data->QUANTITY;
-                $goods_received_note =  $data->GRN;
-                $expiry_date =  $data->EXPIRY_DATE;
-                $batch_no =  $data->BATCH_NO;
+                $quantity =  trim($data->QUANTITY);
+                // $goods_received_note =  $data->GRN;
+                // $expiry_date =  $data->EXPIRY_DATE;
+                $batch_no =  trim($data->BATCH_NO);
+                $part_number =  $batch_no;
                 $sub_batch_no = $batch_no;
                 if (isset($data->SUB_BATCH_NO)) {
                     $sub_batch_no = $data->SUB_BATCH_NO;
                 }
                 $item_stock_sub_batch = new ItemStockSubBatch();
                 $item_stock_sub_batch->stocked_by = $user->id;
+                $item_stock_sub_batch->confirmed_by = $user->id;
                 $item_stock_sub_batch->warehouse_id = $warehouse_id;
                 $item_stock_sub_batch->item_id = $item_id;
                 $item_stock_sub_batch->batch_no = $batch_no;
                 $item_stock_sub_batch->sub_batch_no = $sub_batch_no;
+                $item_stock_sub_batch->part_number = $part_number;
                 $item_stock_sub_batch->quantity = $quantity;
                 $item_stock_sub_batch->reserved_for_supply = 0;
                 $item_stock_sub_batch->in_transit = 0; // initial values set to zero
                 $item_stock_sub_batch->supplied = 0;
                 $item_stock_sub_batch->balance = $quantity;
-                $item_stock_sub_batch->goods_received_note = $goods_received_note;
-                $month = date('m', strtotime($expiry_date));
-                $year = date('Y', strtotime($expiry_date));
-                $no_of_days_in_month = cal_days_in_month(CAL_GREGORIAN, $month, $year);
-                $item_stock_sub_batch->expiry_date = $year . '-' . $month . '-' . $no_of_days_in_month;
+                // $item_stock_sub_batch->goods_received_note = $goods_received_note;
+                // $month = date('m', strtotime($expiry_date));
+                // $year = date('Y', strtotime($expiry_date));
+                // $no_of_days_in_month = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+                // $item_stock_sub_batch->expiry_date = $year . '-' . $month . '-' . $no_of_days_in_month;
                 $item_stock_sub_batch->save();
-
-                $items_stocked[] = $this->show($item_stock_sub_batch);
             } else {
                 $unsaved_products[] = $data;
             }
@@ -127,9 +132,10 @@ class ItemStocksController extends Controller
         }
 
         $title = "Bulk upload of products";
-        $description = "Products were added in bulk to stock at " . $item_stock_sub_batch->warehouse->name . " by " . $user->name;
+        $description = "Products were added in bulk to stock at " . $warehouse->name . " by " . $user->name;
         $roles = ['assistant admin', 'warehouse manager', 'warehouse auditor', 'stock officer'];
         $this->logUserActivity($title, $description, $roles);
+        $items_stocked = $this->index($request);
         return response()->json(compact('unsaved_products', 'items_stocked'), 200);
         // } catch (\Throwable $th) {
         //     return $th; //'An error occured in the file. Check for duplicate entries in Batch No and GRN';
@@ -189,6 +195,7 @@ class ItemStocksController extends Controller
             $item_stock_sub_batch->warehouse_id = $request->warehouse_id;
             $item_stock_sub_batch->item_id = $batch['item_id'];
             $item_stock_sub_batch->batch_no = $batch['batch_no'];
+            $item_stock_sub_batch->part_number = $batch['part_number'];
             $item_stock_sub_batch->sub_batch_no = $batch['batch_no'];
             $item_stock_sub_batch->quantity = $batch['quantity'];
             $item_stock_sub_batch->reserved_for_supply = 0;
@@ -231,6 +238,7 @@ class ItemStocksController extends Controller
         $item_in_stock->warehouse_id = $request->warehouse_id;
         $item_in_stock->item_id = $request->item_id;
         $item_in_stock->batch_no = $request->batch_no;
+        $item_in_stock->part_number = $request->part_number;
         $item_in_stock->goods_received_note = $request->goods_received_note;
 
         // $item_in_stock->expiry_date = date('Y-m-d', strtotime($request->expiry_date));

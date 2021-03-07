@@ -4,22 +4,19 @@
       <h4 class="box-title">Add Product to Stock</h4>
       <span class="pull-right">
         <a class="btn btn-danger" @click="page.option = 'list'"> Back</a>
-        <a class="btn btn-info" @click="bulkUpload = true"> Bulk Upload</a>
+        <a class="btn btn-info" @click="page.option = 'bulk_upload'"> Bulk Upload</a>
       </span>
     </div>
     <div class="box-body">
-      <div v-if="bulkUpload">
-        <a class="btn btn-default" @click="bulkUpload = false"> Cancel</a>
-        <bulk-upload :items-in-stock="itemsInStock" :params="params" :bulk-upload="bulkUpload" :page="page" />
-      </div>
-      <div v-else>
+
+      <div>
         <aside>
           <el-form ref="form" :model="form" label-width="120px">
             <el-row :gutter="5" class="padded">
               <el-col :xs="24" :sm="12" :md="12">
                 <label for="">Select Warehouse</label>
                 <el-select v-model="form.warehouse_id" placeholder="Select Warehouse" filterable class="span">
-                  <el-option v-for="(warehouse, index) in params.warehouses" :key="index" :value="warehouse.id" :label="warehouse.name" :disabled="warehouse.id === 7" />
+                  <el-option v-for="(warehouse, index) in params.warehouses" :key="index" :value="warehouse.id" :label="warehouse.name" :disabled="warehouse.id === 3" />
 
                 </el-select>
 
@@ -49,6 +46,7 @@
                     <th />
                     <th>Product</th>
                     <th>Batch No.</th>
+                    <th>Part No.</th>
                     <th>Quantity</th>
                     <!-- <th>Expiry Date</th> -->
                     <th>GRN</th>
@@ -70,6 +68,9 @@
                     </td>
                     <td>
                       <el-input v-model="sub_batch.batch_no" type="text" outline placeholder="Batch No." />
+                    </td>
+                    <td>
+                      <el-input v-model="sub_batch.part_number" type="text" outline placeholder="Part No." />
                     </td>
                     <td>
                       <el-input v-model="sub_batch.quantity" type="number" outline placeholder="Quantity" min="1" />
@@ -104,12 +105,11 @@
 <script>
 import moment from 'moment';
 import Resource from '@/api/resource';
-import BulkUpload from './BulkUpload';
 const createProduct = new Resource('stock/items-in-stock/store');
 
 export default {
   name: 'AddNewProduct',
-  components: { BulkUpload },
+  // components: { BulkUpload },
   props: {
     params: {
       type: Object,
@@ -151,6 +151,7 @@ export default {
             item_id: '',
             quantity: '',
             batch_no: '',
+            part_number: '',
             goods_received_note: null,
           },
         ],
@@ -174,7 +175,7 @@ export default {
     addLine(index) {
       this.fill_fields_error = false;
 
-      const checkEmptyLines = this.sub_batches.filter(detail => detail.quantity === '' || detail.item_id === '' || detail.batch_no === '');
+      const checkEmptyLines = this.sub_batches.filter(detail => detail.quantity === '' || detail.item_id === '' || detail.batch_no === '' || detail.part_number === '');
 
       if (checkEmptyLines.length >= 1 && this.sub_batches.length > 0) {
         this.fill_fields_error = true;
@@ -188,6 +189,7 @@ export default {
           item_id: '',
           quantity: '',
           batch_no: '',
+          part_number: '',
           goods_received_note: null,
         });
       }
@@ -211,6 +213,7 @@ export default {
           app.sub_batches = [{
             quantity: '',
             batch_no: '',
+            part_number: '',
             expiry_date: '',
             goods_received_note: null,
           }];

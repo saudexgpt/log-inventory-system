@@ -3,7 +3,7 @@
     <div v-if="!print_waybill">
       <div class="row">
         <div class="col-xs-12 page-header" align="center">
-          <img src="svg/logo.png" alt="Company Logo" width="150">
+          <img src="/svg/logo.png" alt="Company Logo" width="150">
           <label>{{ companyName }}</label>
           <!-- <span v-if="waybill.trips.length > 0"> -->
           <span v-if="waybill.confirmed_by !== null">
@@ -28,18 +28,12 @@
         <span v-html="companyContact" />
         <legend>WAYBILL/DELIVERY NOTE</legend>
       </div>
-      <!-- /.row -->
-
-      <!-- Table row -->
       <div class="row">
         <div class="col-xs-8 table-responsive">
           <label>Customer Details</label>
           <address>
-            <label>{{ waybill.invoices[0].customer.user.name.toUpperCase() }}</label><br>
-            {{ (waybill.invoices[0].customer.type) ? waybill.invoices[0].customer.type.name.toUpperCase() : '' }}<br>
-            Phone: {{ waybill.invoices[0].customer.user.phone }}<br>
-            Email: {{ waybill.invoices[0].customer.user.email }}<br>
-            {{ waybill.invoices[0].customer.user.address }}
+            <label>{{ waybill.invoices[0].customer.name.toUpperCase() }}</label><br><br>
+            {{ waybill.invoices[0].customer.address }}
           </address>
           <legend>Invoice Products</legend>
           <table class="table table-bordered">
@@ -125,98 +119,70 @@
         </div>
         <div class="col-xs-4 table-responsive">
           <label>Waybill No.: {{ waybill.waybill_no }}</label><br>
-          <label>Dispatched By.: {{ waybill.dispatch_company }}</label>
-          <br>
           <label>Date:</label>
           {{ moment(waybill.created_at).format('MMMM Do YYYY') }}
-          <table v-if="waybill.dispatcher" class="table table-bordered">
-            <tbody>
-              <tr>
-                <td>
-                  <label>Vehicle No.:</label>
-                  {{ waybill.dispatcher.vehicle.plate_no }}
-                  <br>
-                </td>
-              </tr>
-              <tr>
-                <td>Dispatched By:</td>
-              </tr>
-              <tr
-                v-for="(vehicle_driver, index) in waybill.dispatcher.vehicle.vehicle_drivers"
-                :key="index"
-              >
-                <td v-if="vehicle_driver.driver">
-                  <label>{{ vehicle_driver.type }} Dispatcher</label>
-                  <br>
-                  <label>Name:</label>
-                  {{ vehicle_driver.driver.user.name }}
-                  <br>
-                  <label>Phone:</label>
-                  {{ vehicle_driver.driver.user.phone }}
-                  <br>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div v-if="waybill.trips.length > 0">
+            <table class="table table-bordered">
+              <tbody>
+                <tr>
+                  <td>
+                    <label>Dispatched By:</label>
+                    {{ waybill.trips[0].dispatch_company }}
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <label>Trip No.:</label>
+                    {{ waybill.trips[0].trip_no }}
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <label>Vehicle No.:</label>
+                    {{ waybill.trips[0].vehicle_no }}
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <label>Dispatchers:</label>
+                    {{ waybill.trips[0].dispatchers }}
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <label>Description:</label>
+                    {{ waybill.trips[0].description }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div v-else>
+            <span v-if="checkPermission(['manage waybill cost'])">
+              <p>You need to add this waybill to a vehicle for delivery. Click the button below to do so</p>
+              <router-link :to="{name:'WaybillDeliveryCost'}" class="btn btn-default"> Add Waybill to Trip</router-link>
+            </span>
+
+          </div>
         </div>
         <!-- /.col -->
       </div>
       <div v-if="waybill.trips.length > 0">
-        <div v-if="waybill.dispatcher && waybill.trips[0].dispatch_company === 'GREEN LIFE LOGISTICS'" class="row">
+        <div class="row">
           <div class="col-md-6 col-xs-12">
             <label align="center">CURRENT GOODS DELIVERY STATUS</label>
             <div v-if="waybill.status === 'pending'" align="center">
-              <img src="images/pending.png" alt="Pending" width="150">
+              <img src="/images/pending.png" alt="Pending" width="150">
               <br>
               <label>Goods delivery is pending</label>
             </div>
             <div v-else-if="waybill.status === 'in transit'" align="center">
-              <img src="images/transit.png" alt="Transition" width="150">
+              <img src="/images/transit.png" alt="Transition" width="150">
               <br>
               <label>Goods are currently in transit for delivery</label>
             </div>
             <div v-else-if="waybill.status === 'delivered'" align="center">
-              <img src="images/delivered.png" alt="Delivered" width="150">
-              <br>
-              <label>Goods are delivered</label>
-            </div>
-          </div>
-          <div class="col-md-6 col-xs-12">
-            <div v-if="waybill.status === 'pending'">
-              <a
-                class="btn btn-primary"
-                @click="form.status = 'in transit'; changeWaybillStatus()"
-              > <i class="el-icon-printer" /> Print Waybill</a>
-              <span
-                class="label label-danger"
-              >This should be done only when goods have left the warehouse to meet the customer</span>
-            </div>
-            <div v-else-if="waybill.status === 'in transit'">
-              <a
-                class="btn btn-success"
-                @click="form.status = 'delivered'; changeWaybillStatus()"
-              >Click to Mark Goods as Delivered</a>
-              <span
-                class="label label-danger"
-              >This should be done only when goods have been delivered successfully to the customer</span>
-            </div>
-          </div>
-        </div>
-        <div v-if="waybill.trips[0].dispatch_company !== 'GREEN LIFE LOGISTICS'" class="row">
-          <div class="col-md-6 col-xs-12">
-            <label align="center">CURRENT GOODS DELIVERY STATUS</label>
-            <div v-if="waybill.status === 'pending'" align="center">
-              <img src="images/pending.png" alt="Pending" width="150">
-              <br>
-              <label>Goods delivery is pending</label>
-            </div>
-            <div v-else-if="waybill.status === 'in transit'" align="center">
-              <img src="images/transit.png" alt="Transition" width="150">
-              <br>
-              <label>Goods are currently in transit for delivery</label>
-            </div>
-            <div v-else-if="waybill.status === 'delivered'" align="center">
-              <img src="images/delivered.png" alt="Delivered" width="150">
+              <img src="/images/delivered.png" alt="Delivered" width="150">
               <br>
               <label>Goods are delivered</label>
             </div>

@@ -42,7 +42,7 @@
             </span>
           </div>
           <div slot="action" slot-scope="props">
-            <a class="btn btn-primary" @click="warehouse=props.row; page.option = 'warehouse_details'"><i class="fa fa-users" /> Assign Staff to Warehouse</a>
+            <el-button type="primary" @click="warehouse=props.row; page.option = 'warehouse_details'"><i class="fa fa-users" /> Assign Users</el-button>
             <!-- <a class="btn btn-danger" @click="confirmDelete(props)"><i class="fa fa-trash" /> </a> -->
           </div>
 

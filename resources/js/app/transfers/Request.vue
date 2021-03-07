@@ -107,6 +107,9 @@
                   </div>
                 </div>
                 <div v-else class="alert alert-danger">No</div>
+                <!-- <div v-else>
+                  <router-link v-if="checkPermission(['manage transfer request'])" :to="{name:'GenerateTransferWaybill'}" class="btn btn-primary"> Generate</router-link>
+                </div> -->
               </div>
               <div slot="created_at" slot-scope="props">
                 {{
@@ -119,6 +122,7 @@
                   @click="
                     transfer_request = props.row;
                     page.option = 'request_details';
+                    can_approve=true;
                   "
                 >
                   <i class="el-icon-tickets" />
@@ -181,6 +185,7 @@
                   @click="
                     transfer_request = props.row;
                     page.option = 'request_details';
+                    can_approve=false;
                   "
                 >
                   <i class="el-icon-tickets" />
@@ -222,6 +227,7 @@
       >Go Back</a>
       <transfer-request-details
         :invoice="transfer_request"
+        :can-approve="can_approve"
         :page="page"
         :company-name="params.company_name"
         :company-contact="params.company_contact"
@@ -321,6 +327,7 @@ export default {
       table_title: '',
       in_warehouse: '',
       transfer_request: {},
+      can_approve: false,
       selected_row_index: '',
       downloadLoading: false,
       filename: 'TransferRequests',
@@ -338,7 +345,8 @@ export default {
     onEditUpdate(updated_row) {
       const app = this;
       // app.items_in_stock.splice(app.itemInStock.index-1, 1);
-      app.sent_requests[app.selected_row_index - 1] = updated_row;
+      // app.sent_requests[app.selected_row_index - 1] = updated_row;
+      app.sent_requests.splice(app.selected_row_index - 1, 1, updated_row);
     },
     showCalendar() {
       this.show_calendar = !this.show_calendar;

@@ -5,12 +5,13 @@ namespace App\Models\Stock;
 use App\Models\Invoice\DispatchedProduct;
 use App\Models\Invoice\InvoiceItem;
 use App\Models\Invoice\InvoiceItemBatch;
+use App\Models\Warehouse\Site;
 use App\Models\Warehouse\Warehouse;
 use Illuminate\Database\Eloquent\Model;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class ItemStock extends Model
+class SiteItemStock extends Model
 {
 
     use SoftDeletes;
@@ -22,9 +23,13 @@ class ItemStock extends Model
     {
         return $this->belongsTo(Item::class);
     }
-    public function subBatches()
+    public function site()
     {
-        return $this->hasMany(ItemStockSubBatch::class);
+        return $this->belongsTo(Site::class);
+    }
+    public function subBatch()
+    {
+        return $this->belongsTo(ItemStockSubBatch::class, 'item_stock_sub_batch_id', 'id');
     }
 
 

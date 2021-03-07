@@ -12,7 +12,7 @@
           <el-form ref="form" :model="form" label-width="120px">
             <el-row :gutter="5" class="padded">
               <el-col :xs="24" :sm="12" :md="12">
-                <label for="">Select Warehouse</label>
+                <label for="">Supplying Warehouse</label>
                 <el-select v-model="form.warehouse_id" placeholder="Select Warehouse" filterable class="span" @change="fetchUndeliveredInvoices()">
                   <el-option v-for="(warehouse, warehouse_index) in params.warehouses" :key="warehouse_index" :value="warehouse.id" :label="warehouse.name" />
 
@@ -51,13 +51,13 @@
                     <tbody>
                       <tr>
                         <td colspan="3" />
-                        <td><label>BN / Quantity</label></td>
+                        <td><label>BN / approved_quantity</label></td>
                         <td colspan="3" />
                       </tr>
                       <tr v-for="(invoice_item, index) in form.invoice_items" :key="index">
                         <td>{{ index + 1 }}</td>
                         <td>{{ invoice_item.item.name }}</td>
-                        <td>{{ invoice_item.quantity }} {{ formatPackageType(invoice_item.item.package_type) }}</td>
+                        <td>{{ invoice_item.approved_quantity }}</td>
                         <td>
                           <el-select
                             v-model="invoice_item.batches"
@@ -71,11 +71,11 @@
                               v-for="(batch, batch_index) in invoice_item.item.stocks"
                               :key="batch_index"
                               :value="batch.id"
-                              :label="batch.batch_no + ' | ' + batch.expiry_date"
+                              :label="batch.batch_no "
                             >
                               <span
                                 style="float: left"
-                              >{{ batch.batch_no + ' | ' + batch.expiry_date }}</span>
+                              >{{ batch.batch_no }}</span>
                               <span
                                 style="float: right; color: #8492a6; font-size: 13px"
                               >({{ batch.balance - batch.reserved_for_supply }})</span>
@@ -84,13 +84,13 @@
                         </td>
 
                         <td>{{ invoice_item.quantity_supplied+' ('+invoice_item.delivery_status+')' }}</td>
-                        <td><div class="alert alert-danger">{{ invoice_item.quantity - invoice_item.quantity_supplied }}</div></td>
+                        <td><div class="alert alert-danger">{{ invoice_item.approved_quantity - invoice_item.quantity_supplied }}</div></td>
                         <td>
                           <div v-if="invoice_item.supply_bal > 0">
                             <input
                               v-model="invoice_item.quantity_for_supply"
                               class="form-control"
-                              placeholder="Set Quantity for Supply"
+                              placeholder="Set approved_quantity for Supply"
                               type="number"
                               :max="invoice_item.supply_bal"
                               min="0"
@@ -238,7 +238,7 @@ export default {
     //   // console.log(invoice_items);
     //   invoice_items.forEach((invoice_item) => {
     //     var total_batch_balance = 0;
-    //     var supply_bal = invoice_item.quantity - invoice_item.quantity_supplied;
+    //     var supply_bal = invoice_item.approved_quantity - invoice_item.quantity_supplied;
     //     var stocks = invoice_item.item.stocks;
 
     //     stocks.forEach((stock_batch) => {
@@ -272,7 +272,7 @@ export default {
       }
       invoice_items.forEach(invoice_item => {
         var total_batch_balance = 0;
-        var supply_bal = invoice_item.quantity - invoice_item.quantity_supplied;
+        var supply_bal = invoice_item.approved_quantity - invoice_item.quantity_supplied;
         invoice_item.item.stocks.forEach(batch => {
           total_batch_balance += parseInt(batch.balance - batch.reserved_for_supply);
         });

@@ -11,22 +11,26 @@
 */
 
 $router->post('auth/login', 'AuthController@login');
-$router->get('dispatch-product/issue', 'DebugController@solveDispatchProductIssue');
-$router->get('total-product', 'DebugController@totalDispatchedProduct');
-$router->get('reserved-', 'DebugController@reservedProducts');
-$router->get('stock-balance', 'DebugController@balanceStockAccount');
-$router->get('stock-balance-product', 'DebugController@balanceStockAccountPerProduct');
-$router->get('balance-invoice-items', 'DebugController@balanceInvoiceItems');
-$router->get('stabilize-account', 'DeproductbugController@stabilizeAccount');
-$router->get('reset', 'DebugController@resetStock');
-$router->get('split', 'DebugController@splitExcessStock');
-$router->get('stabilize-invoice-items', 'Invoice\InvoicesController@stabilizeInvoiceItems');
-$router->get('deliver-items', 'Invoice\InvoicesController@deliverProducts');
-$router->get('correct-dispatch-product', 'Invoice\InvoicesController@correctDispatchProductDate');
-$router->get('invoice-items-without-waybill', 'Invoice\InvoicesController@checkInvoiceItemsWithoutWaybill');
-$router->get('set-transfer-request-warehouse', 'Transfers\GoodsTransferController@setTransferRequestWarehouse');
+
+$router->get('check-product-depletion', 'Stock\DepletionChecksController@checkForProductDepletion');
+// $router->get('dispatch-product/issue', 'DebugController@solveDispatchProductIssue');
+// $router->get('total-product', 'DebugController@totalDispatchedProduct');
+// $router->get('reserved-', 'DebugController@reservedProducts');
+// $router->get('stock-balance', 'DebugController@balanceStockAccount');
+// $router->get('stock-balance-product', 'DebugController@balanceStockAccountPerProduct');
+// $router->get('balance-invoice-items', 'DebugController@balanceInvoiceItems');
+// $router->get('stabilize-account', 'DeproductbugController@stabilizeAccount');
+// $router->get('reset', 'DebugController@resetStock');
+// $router->get('split', 'DebugController@splitExcessStock');
+// $router->get('stabilize-invoice-items', 'Invoice\InvoicesController@stabilizeInvoiceItems');
+// $router->get('deliver-items', 'Invoice\InvoicesController@deliverProducts');
+// $router->get('correct-dispatch-product', 'Invoice\InvoicesController@correctDispatchProductDate');
+// $router->get('invoice-items-without-waybill', 'Invoice\InvoicesController@checkInvoiceItemsWithoutWaybill');
+// $router->get('set-transfer-request-warehouse', 'Transfers\GoodsTransferController@setTransferRequestWarehouse');
 
 $router->get('clear-partial-invoices', 'Invoice\InvoicesController@clearPartialInvoices');
+$router->post('upload-a-image', 'Stock\ReturnsController@uploadImage');
+$router->post('delete-media', 'Stock\ReturnsController@deleteMedia');
 $router->group(['middleware' => 'auth:api'], function () use ($router) {
 
     $router->get('auth/user', 'AuthController@user');
@@ -155,6 +159,8 @@ $router->group(['middleware' => 'auth:api'], function () use ($router) {
                 $router->get('fetch-available-vehicles', 'InvoicesController@fetchAvailableVehicles');
                 $router->post('store', 'InvoicesController@generateWaybill');
                 $router->put('change-status/{waybill}', 'InvoicesController@changeWaybillStatus');
+
+                $router->post('send-bulk-on-transit', 'InvoicesController@sendBulkWaybillOnTransit');
             });
         });
     });
@@ -193,6 +199,8 @@ $router->group(['middleware' => 'auth:api'], function () use ($router) {
                 $router->get('undelivered-invoices', 'GoodsTransferController@unDeliveredInvoices');
                 $router->get('fetch-available-vehicles', 'GoodsTransferController@fetchAvailableVehicles');
                 $router->post('store', 'GoodsTransferController@generateWaybill');
+                $router->post('send-bulk-on-transit', 'GoodsTransferController@sendBulkWaybillOnTransit');
+
                 $router->put('change-status/{waybill}', 'GoodsTransferController@changeWaybillStatus');
                 $router->post('set-dispatcher', 'GoodsTransferController@setWaybillDispatcher');
             });
@@ -213,6 +221,7 @@ $router->group(['middleware' => 'auth:api'], function () use ($router) {
                 $router->put('/vehicle-expenses/{vehicle_expense}', 'AuditConfirmsController@confirmVehicleExpense');
 
                 $router->put('/invoice/{invoice}', 'AuditConfirmsController@confirmInvoice');
+                $router->put('/request/{transfer_request}', 'AuditConfirmsController@confirmTransferRequest');
             });
         });
     });
@@ -263,7 +272,7 @@ $router->group(['middleware' => 'auth:api'], function () use ($router) {
             $router->get('product-batches', 'ItemStocksController@productBatches');
             $router->get('/', 'ItemStocksController@index')->middleware('permission:view item stocks|manage item stocks');
 
-            $router->get('product-batches', 'ItemStocksController@productBatches');
+            // $router->get('product-batches', 'ItemStocksController@productBatches');
 
             //$router->group(['middleware' => 'permission:manage item stocks'], function () use ($router) {
             $router->post('store', 'ItemStocksController@store')->middleware('permission:create item stocks|manage item stocks');
@@ -292,6 +301,7 @@ $router->group(['middleware' => 'auth:api'], function () use ($router) {
         ///////////////////manage returned products//////////////////////////////////
         $router->group(['prefix' => 'returns'], function () use ($router) {
             $router->get('/', 'ReturnsController@index')->middleware('permission:view returned products|manage returned products');
+            $router->get('site-product-batches', 'ReturnsController@siteProductBatches');
             $router->group(['middleware' => 'permission:manage returned products'], function () use ($router) {
                 $router->post('store', 'ReturnsController@store');
                 $router->put('update/{returned_product}', 'ReturnsController@update');
@@ -317,7 +327,19 @@ $router->group(['middleware' => 'auth:api'], function () use ($router) {
             $router->delete('delete/{warehouse}', 'WarehousesController@destroy');
 
             $router->post('add-user-to-warehouse', 'WarehousesController@addUserToWarehouse');
+            $router->post('remove-user-from-warehouse', 'WarehousesController@removeUserFromWarehouse');
         });
+        // $router->group(['middleware' => 'permission:manage site'], function () use ($router) {
+        $router->get('/site', 'SitesController@index');
+        $router->get('/site/assignable-users', 'WarehousesController@assignableUsers');
+
+        $router->post('/site/store', 'SitesController@store');
+        $router->put('/site/update/{site}', 'SitesController@update');
+        $router->delete('/site/delete/{site}', 'SitesController@destroy');
+
+        $router->post('site/add-user-to-site', 'SitesController@addUserToSite');
+        $router->post('site/remove-user-from-site', 'SitesController@removeUserFromSite');
+        // });
     });
     ////////////////////////////////////WAREHOUSE ENDS/////////////////////////////////////////////
 

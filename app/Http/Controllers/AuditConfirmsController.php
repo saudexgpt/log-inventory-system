@@ -8,6 +8,8 @@ use App\Models\Invoice\Waybill;
 use App\Models\Logistics\VehicleExpense;
 use App\Models\Stock\ItemStockSubBatch;
 use App\Models\Stock\ReturnedProduct;
+use App\Models\Transfers\TransferRequest;
+use App\Models\Transfers\TransferRequestItem;
 use App\Models\Transfers\TransferRequestWaybill;
 use Illuminate\Http\Request;
 
@@ -83,6 +85,29 @@ class AuditConfirmsController extends Controller
         $roles = ['assistant admin', 'warehouse manager', 'stock officer'];
         $this->logUserActivity($title, $description, $roles);
         return response()->json(['confirmed' => $confirmed, 'confirmed_by' => $user->name], 200);
+    }
+
+    public function confirmTransferRequest(Request $request, TransferRequest $transfer_request)
+    {
+        $user = $this->getUser();
+        $transfer_request_items = json_decode(json_encode($request->transfer_request_items));
+        $request->invoiceItems;
+        foreach ($transfer_request_items as $transfer_request_item) {
+            $request_item = TransferRequestItem::find($transfer_request_item->id);
+            $request_item->approved_quantity = $transfer_request_item->approved_quantity;
+            $request_item->save();
+        }
+        $transfer_request->approved_by = $user->id;
+        $confirmed = 'failed';
+        if ($transfer_request->save()) {
+            $confirmed = 'success';
+        }
+        $title = "Goods transfer request approved by auditor";
+        $description = "Transfer request with number: $transfer_request->request_number was approved by $user->name";
+        //log this activity
+        $roles = ['assistant admin', 'warehouse manager', 'stock officer'];
+        $this->logUserActivity($title, $description, $roles);
+        return response()->json(['confirmed' => $confirmed, 'approved_by' => $user->name], 200);
     }
 
     public function confirmTransferWaybill(Request $request, TransferRequestWaybill $waybill)

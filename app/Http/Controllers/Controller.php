@@ -22,9 +22,13 @@ use App\Models\Setting\CustomerType;
 use App\Models\Setting\Setting;
 use App\Models\Setting\Tax;
 use App\Models\Stock\Item;
+use App\Models\Warehouse\Site;
 use App\Models\Warehouse\Warehouse;
 use Notification;
+use App\Notifications\NotifyWithEmailDB;
 use App\Notifications\AuditTrail;
+use App\Notifications\NotifyProductDepletion;
+use App\Notifications\NotifyWithEmailDBPusher;
 
 class Controller extends BaseController
 {
@@ -72,6 +76,12 @@ class Controller extends BaseController
         } else {
             $warehouses = $user->warehouses()->with(['itemStocks.item.taxes', 'itemStocks.item.price', 'vehicles'])->where('enabled', 1)->get();
         }
+        $all_sites = Site::with(['itemStocks.item'])->where('enabled', 1)->get();
+        if ($user->isAdmin() || $user->isAssistantAdmin()) {
+            $sites = $all_sites;
+        } else {
+            $sites = $user->sites()->with(['itemStocks.item'])->where('enabled', 1)->get();
+        }
         $items = Item::with(['taxes', 'price'])->orderBy('name')->get();
         $currencies = Currency::get();
         $taxes = Tax::get();
@@ -86,14 +96,14 @@ class Controller extends BaseController
         $engine_types = ['Diesel', 'Petrol', 'Kerosene'];
         $expense_types = ['Insurance', 'Maintenance / Repairs', 'Fuel'];
         $package_types = ['Bottles', 'Boxes', 'Cartons', 'Packets', 'Rolls', 'Tins'];
-        $product_return_reasons = ['Product short-dated', 'Mass return - expired', 'Mass return - unexpired', 'Rep. resignation/sack - expired', 'Rep. resignation/sack - unexpired', 'Spillage', 'Others'];
+        $product_return_reasons = ['Damaged Product', 'Unfitting Size', 'Others'];
         $teams = ['Allied', 'Bull', 'Confectionaries', 'Cosmestics', 'Eagle', 'Funbact', 'Jaguar', 'Lion', 'REP', 'Stallion'];
-        $dispatch_companies = ['GREENLIFE LOGISTICS', 'COURIER SERVICE', 'FOB (Free On Board)'];
+        $dispatch_companies = ['AGGREKO LOGISTICS', 'COURIER SERVICE', 'FOB (Free On Board)'];
         $all_roles = Role::orderBy('name')->select('name')->get();
         $default_roles = Role::where('role_type', 'default')->orderBy('name')->select('name')->get();
 
         return response()->json([
-            'params' => compact('company_name', 'company_contact', 'all_warehouses', 'warehouses', 'items', 'currencies', 'taxes', 'order_statuses', 'invoice_statuses', 'currency', 'vehicle_types', 'engine_types', 'expense_types', 'package_types', 'automobile_engineers', 'all_roles', 'default_roles', 'product_return_reasons', 'product_expiry_date_alert', 'teams', 'dispatch_companies')
+            'params' => compact('company_name', 'company_contact', 'all_warehouses', 'warehouses', 'all_sites', 'sites', 'items', 'currencies', 'taxes', 'order_statuses', 'invoice_statuses', 'currency', 'vehicle_types', 'engine_types', 'expense_types', 'package_types', 'automobile_engineers', 'all_roles', 'default_roles', 'product_return_reasons', 'product_expiry_date_alert', 'teams', 'dispatch_companies')
         ]);
     }
     public function settingValue($key)
@@ -104,6 +114,19 @@ class Controller extends BaseController
     {
         $settings = Setting::get();
         return response()->json(compact('settings'), 200);
+    }
+    public function getReceiptNo($prefix, $next_no)
+    {
+        $no_of_digits = 5;
+
+        $digit_of_next_no = strlen($next_no);
+        $unused_digit = $no_of_digits - $digit_of_next_no;
+        $zeros = '';
+        for ($i = 1; $i <= $unused_digit; $i++) {
+            $zeros .= '0';
+        }
+
+        return $prefix . $zeros . $next_no;
     }
     public function nextReceiptNo($key_prefix = 'invoice')
     {
@@ -139,6 +162,38 @@ class Controller extends BaseController
         // }
         // return $user->notify(new AuditTrail($title, $description));
         // send notification to admin at all times
+        $users = $this->setupRecipients($roles);
+        // var_dump($users);
+        $notification = new AuditTrail($title, $description);
+        return Notification::send($users->unique(), $notification);
+        // $activity_log = new ActivityLog();
+        // $activity_log->user_id = $user->id;
+        // $activity_log->action = $action;
+        // $activity_log->user_type = $user->roles[0]->name;
+        // $activity_log->save();
+    }
+    public function notifyProductDepletion($title, $description, $url, $depletions, $roles = [])
+    {
+
+        $url = env('APP_URL') . '/' . $url;
+        $users = $this->setupRecipients($roles);
+        $delay = now()->addMinutes(2);
+        // var_dump($users);
+        $notification = new NotifyProductDepletion($title, $description, $url, $depletions);
+        return Notification::send($users->unique(), $notification); //->delay($delay);
+    }
+    public function notifyByEmailAndDB($title, $description, $url, $roles = [])
+    {
+
+        $url = env('APP_URL') . '/' . $url;
+        // send notification to admin at all times
+        $users = $this->setupRecipients($roles);
+        // var_dump($users);
+        $notification = new NotifyWithEmailDB($title, $description, $url);
+        return Notification::send($users->unique(), $notification);
+    }
+    private function setupRecipients($roles = [])
+    {
         $users = User::whereHas('roles', function ($query) {
             $query->where('name', '=', 'admin'); // this is the role id inside of this callback
         })->get();
@@ -167,13 +222,7 @@ class Controller extends BaseController
             })->get();
             $users = $users->merge($auditors);
         }
-        // var_dump($users);
-        $notification = new AuditTrail($title, $description);
-        return Notification::send($users->unique(), $notification);
-        // $activity_log = new ActivityLog();
-        // $activity_log->user_id = $user->id;
-        // $activity_log->action = $action;
-        // $activity_log->user_type = $user->roles[0]->name;
-        // $activity_log->save();
+
+        return $users;
     }
 }

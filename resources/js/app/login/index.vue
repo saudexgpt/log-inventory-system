@@ -55,9 +55,9 @@
         </div>
       </div> -->
     </el-form>
-    <div>
+    <!-- <div>
       <img src="/images/software-name-light.png" style="width: 60%; opacity: 0.5">
-    </div>
+    </div> -->
   </div>
 </template>
 

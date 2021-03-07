@@ -6,7 +6,7 @@
           <el-col :xs="24" :sm="24" :md="24">
             <label for="">Select Warehouse</label>
             <el-select v-model="form.warehouse_id" placeholder="Select Warehouse" filterable class="span">
-              <el-option v-for="(warehouse, index) in params.warehouses" :key="index" :value="warehouse.id" :label="warehouse.name" :disabled="warehouse.id === 7" />
+              <el-option v-for="(warehouse, index) in params.warehouses" :key="index" :value="warehouse.id" :label="warehouse.name" :disabled="warehouse.id === 3" />
 
             </el-select>
 
@@ -45,13 +45,6 @@ export default {
     itemsInStock: {
       type: Array,
       default: () => ([]),
-    },
-
-    bulkUpload: {
-      type: Boolean,
-      default: () => ({
-        option: true,
-      }),
     },
     page: {
       type: Object,
@@ -105,17 +98,17 @@ export default {
         form.bulk_data = app.tableData;
         uploadBulkProduct.store(form)
           .then(response => {
-            console.log(response.unsaved_products);
-            app.tableData = response.unsaved_products;
-            // app.sub_batches = [];
-            for (let count = 0; count < response.items_stocked.length; count++) {
-              app.itemsInStock.push(response.items_stocked[count]);
+            if (response.unsaved_products.length > 0) {
+              app.$message({ message: 'Some products were not uploaded', type: 'danger' });
+              app.tableData = response.unsaved_products;
+            } else {
+              app.$message({ message: 'Bulk Products uploaded Successfully!!!', type: 'success' });
+              app.$emit('save', response.items_stocked.original);
             }
-            app.$message({ message: 'Bulk Products uploaded Successfully!!!', type: 'success' });
+
             // app.itemsInStock.push(response.item_in_stock);
             // app.$emit('update', response);
             load.hide();
-            app.page.option = 'list';
           });
         // .catch(error => {
         //   load.hide();

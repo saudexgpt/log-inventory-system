@@ -3,7 +3,7 @@
     <div v-if="!print_waybill">
       <div class="row">
         <div class="col-xs-12 page-header" align="center">
-          <img src="svg/logo.png" alt="Company Logo" width="50">
+          <img src="/svg/logo.png" alt="Company Logo" width="150">
           <span>
             <label>{{ companyName }}</label>
             <div class="pull-right no-print">
@@ -20,16 +20,13 @@
         <span v-html="companyContact" />
         <legend>WAYBILL/DELIVERY NOTE</legend>
       </div>
-      <!-- /.row -->
-
-      <!-- Table row -->
       <div class="row">
         <div class="col-xs-8 table-responsive">
-          <label>Customer Details</label>
+          <label>Recipient Details</label>
           <address>
             <label>{{ waybill.transfer_requests[0].request_warehouse.name.toUpperCase() }}</label>
           </address>
-          <legend>Invoice Products</legend>
+          <legend>Products</legend>
           <table class="table table-bordered">
             <thead>
               <tr>
@@ -66,23 +63,11 @@
                 <td>{{ waybill_item.invoice.request_by.name.toUpperCase() }}</td>
                 <td>{{ waybill_item.item.name }}</td>
                 <!-- <td>{{ waybill_item.item.description }}</td> -->
-                <td>{{ waybill_item.quantity+' '+formatPackageType(waybill_item.type) }}</td>
+                <td>{{ waybill_item.quantity }}</td>
                 <!-- <td align="right">{{ currency + Number(waybill_item.rate).toLocaleString() }}</td>
                 <td>{{ waybill_item.type }}</td>
                 <td align="right">{{ currency + Number(waybill_item.amount).toLocaleString() }}</td>-->
               </tr>
-              <!-- <tr>
-                <td colspan="4" align="right"><label>Subtotal</label></td>
-                <td align="right">{{ currency + Number(waybill.invoice.subtotal).toLocaleString() }}</td>
-              </tr>
-              <tr>
-                <td colspan="4" align="right"><label>Discount</label></td>
-                <td align="right">{{ currency + Number(waybill.invoice.discount).toLocaleString() }}</td>
-              </tr>
-              <tr>
-                <td colspan="4" align="right"><label>Grand Total</label></td>
-                <td align="right"><label style="color: green">{{ currency + Number(waybill.invoice.amount).toLocaleString() }}</label></td>
-              </tr>-->
             </tbody>
           </table>
           <a
@@ -95,32 +80,69 @@
           </a>
         </div>
         <div class="col-xs-4 table-responsive">
-          <label>Waybill No.: {{ waybill.transfer_request_waybill_no }}</label><br>
-          <label>Dispatched By.: {{ (waybill.dispatcher) ? waybill.dispatcher.name : '' }}</label>
-          <el-select v-if="warehouseId === waybill.supply_warehouse_id" v-model="waybill.dispatched_by" style="width: 100%" filterable @change="setDispatcher($event)">
-            <el-option v-for="(driver, driver_index) in drivers" :key="driver_index" :value="(driver.user) ? driver.user.id : ''" :label="(driver.user) ? driver.user.name : ''" />
-          </el-select>
+          <label>Waybill No.: {{ waybill.transfer_request_waybill_no }}</label>
           <br>
           <label>Date:</label>
-          {{ moment(waybill.created_at).format('MMMM Do YYYY') }}
+          {{ moment(waybill.created_at).format('MMMM Do YYYY') }}<br>
+          <div v-if="waybill.trips.length > 0">
+            <table v-if="waybill.trips.length > 0" class="table table-bordered">
+              <tbody>
+                <tr>
+                  <td>
+                    <label>Dispatched By:</label>
+                    {{ waybill.trips[0].dispatch_company }}
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <label>Trip No.:</label>
+                    {{ waybill.trips[0].trip_no }}
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <label>Vehicle No.:</label>
+                    {{ waybill.trips[0].vehicle_no }}
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <label>Dispatchers:</label>
+                    {{ waybill.trips[0].dispatchers }}
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <label>Description:</label>
+                    {{ waybill.trips[0].description }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div v-else>
+            <span v-if="checkPermission(['manage waybill cost'])">
+              <p>You need to add this waybill to a vehicle for delivery. Click the button below to do so</p>
+              <router-link :to="{name:'WaybillDeliveryCost'}" class="btn btn-default"> Add Waybill to Trip</router-link>
+            </span>
+          </div>
         </div>
-        <!-- /.col -->
       </div>
-      <div v-if="waybill.confirmed_by !== null && waybill.dispatched_by !== null" class="row">
+      <div v-if="waybill.trips.length > 0" class="row">
         <div class="col-md-6 col-xs-12">
           <label align="center">CURRENT GOODS DELIVERY STATUS</label>
           <div v-if="waybill.status === 'pending'" align="center">
-            <img src="images/pending.png" alt="Pending" width="150">
+            <img src="/images/pending.png" alt="Pending" width="150">
             <br>
             <label>Goods delivery is pending</label>
           </div>
           <div v-else-if="waybill.status === 'in transit'" align="center">
-            <img src="images/transit.png" alt="Transition" width="150">
+            <img src="/images/transit.png" alt="Transition" width="150">
             <br>
             <label>Goods are currently in transit for delivery</label>
           </div>
           <div v-else-if="waybill.status === 'delivered'" align="center">
-            <img src="images/delivered.png" alt="Delivered" width="150">
+            <img src="/images/delivered.png" alt="Delivered" width="150">
             <br>
             <label>Goods are delivered</label>
           </div>
@@ -144,6 +166,10 @@
               class="label label-danger"
             >This should be done only when goods have been received by {{ waybill.request_warehouse.name }}</span><br>
             <label for="">When confirmed as received, products will be moved to stock.</label>
+
+          </div>
+          <div v-if="waybill.status === 'in transit' && warehouseId !== waybill.request_warehouse_id">
+            <div class="alert alert-danger">The recipients in <label>{{ waybill.transfer_requests[0].request_warehouse.name.toUpperCase() }}</label> will mark the goods as RECEIVED when delivered</div>
 
           </div>
         </div>

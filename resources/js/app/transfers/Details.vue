@@ -6,7 +6,7 @@
           <!-- title row -->
           <div class="row">
             <div class="col-xs-12 page-header">
-              <img src="svg/logo.png" alt="Company Logo" width="50">
+              <img src="/svg/logo.png" alt="Company Logo" width="150">
               <span>
                 <label>{{ companyName }}</label>
                 <div class="pull-right no-print">
@@ -51,9 +51,10 @@
                   <tr>
                     <th>Product</th>
                     <!-- <th>Description</th> -->
-                    <th>Quantity</th>
+                    <th>Quantity Requested</th>
+                    <th>Quantity Approved</th>
                     <th>Supplied</th>
-                    <th>Packaging</th>
+                    <!-- <th>Packaging</th> -->
                   </tr>
                 </thead>
                 <tbody>
@@ -61,13 +62,34 @@
                     <td>{{ (invoice_item.item) ? invoice_item.item.name : '' }}</td>
                     <!-- <td>{{ invoice_item.item.description }}</td> -->
                     <td>
-                      {{ invoice_item.quantity }} {{ invoice_item.type }}
-                      <small>({{ invoice_item.no_of_cartons }} CTN)</small>
+                      {{ invoice_item.quantity }}
                     </td>
                     <td>
-                      {{ invoice_item.quantity_supplied }} {{ invoice_item.type }}
+                      <div v-if="canApprove === true">
+                        <el-input v-model="invoice_item.approved_quantity" />
+                      </div>
+                      <div v-else>
+                        {{ invoice_item.approved_quantity }}
+                      </div>
                     </td>
-                    <td>{{ invoice_item.type }}</td>
+                    <td>
+                      {{ invoice_item.quantity_supplied }}
+                    </td>
+                    <!-- <td>{{ invoice_item.type }}</td> -->
+                  </tr>
+                  <tr v-if="checkPermission(['audit confirm actions']) && canApprove === true">
+                    <td colspan="7">
+                      <a
+                        v-if="checkPermission(['audit confirm actions']) && canApprove === true"
+                        v-loading="confirm_loader"
+                        class="btn btn-success"
+                        title="Click to confirm"
+                        @click="confirmInvoiceDetails()"
+                      >
+                        <i class="fa fa-check" /> Confirm Approval
+                      </a>
+                      <router-link v-if="checkPermission(['manage transfer request'])" :to="{name:'GenerateTransferWaybill'}" class="btn btn-primary"> Generate Waybill</router-link>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -117,13 +139,18 @@ import { parseTime } from '@/utils';
 import checkPermission from '@/utils/permission';
 import checkRole from '@/utils/role';
 // import NewWaybill from './partials/NewWaybill';
-
+import Resource from '@/api/resource';
+const confirmRequestDetailsResource = new Resource('audit/confirm/request');
 export default {
   // components: { NewWaybill },
   props: {
     invoice: {
       type: Object,
       default: () => ({}),
+    },
+    canApprove: {
+      type: Boolean,
+      default: () => (false),
     },
     page: {
       type: Object,
@@ -160,6 +187,23 @@ export default {
     moment,
     doPrint() {
       window.print();
+    },
+    confirmInvoiceDetails() {
+      const app = this;
+      var param = app.invoice;
+      const message = 'Are you sure everything is intact? Click OK to confirm.';
+      if (confirm(message)) {
+        app.confirm_loader = true;
+        confirmRequestDetailsResource
+          .update(app.invoice.id, param)
+          .then(response => {
+            if (response.confirmed === 'success') {
+              app.activate_confirm_button = false;
+              app.$message('Invoice Items Approved Successfully');
+            }
+            app.confirm_loader = false;
+          });
+      }
     },
     handleDownload() {
       this.downloadLoading = true;

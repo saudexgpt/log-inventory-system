@@ -36,10 +36,10 @@ const permissionRoutes = {
       component: () => import('@/app/stock/items-stock/ItemStocks'),
       name: 'ItemStocks',
       meta: {
-        title: 'Products In Stock',
+        title: 'Stock',
         permissions: ['manage item stocks', 'view item stocks'],
       },
-      hidden: true,
+      // hidden: true,
     },
     {
       path: 'returns',

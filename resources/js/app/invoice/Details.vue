@@ -6,7 +6,7 @@
           <!-- title row -->
           <div class="row">
             <div class="col-xs-12 page-header">
-              <img src="svg/logo.png" alt="Company Logo" width="150">
+              <img src="/svg/logo.png" alt="Company Logo" width="150">
               <span>
                 <label>{{ companyName }}</label>
                 <div class="pull-right no-print">
@@ -21,36 +21,27 @@
           <!-- info row -->
           <div class="row invoice-info">
             <div class="col-sm-4 invoice-col">
-              <label>Customer Details</label>
+              <label>Recipient Details</label>
               <address>
-                <label>{{ invoice.customer.user.name.toUpperCase() }}</label>
+                <strong>{{ invoice.customer.name.toUpperCase() }}</strong>
                 <br>
-                {{
-                  invoice.customer.type
-                    ? invoice.customer.type.name.toUpperCase()
-                    : ''
-                }}
-                <br>
-                Phone: {{ invoice.customer.user.phone }}
-                <!-- <br>
-                Email: {{ invoice.customer.user.email }}-->
-                <br>
-                {{ invoice.customer.user.address }}
+                <label>Address:</label> {{ invoice.customer.address.toUpperCase() }}
               </address>
             </div>
             <!-- /.col -->
             <div class="col-sm-4 invoice-col">
-              <label>Concerned Warehouse</label>
+              <label>Supplying Warehouse</label>
               <address>
                 <strong>{{ invoice.warehouse.name.toUpperCase() }}</strong>
                 <br>
-                {{ invoice.warehouse.address }}
-                <br>
+                <label>Address:</label> {{ invoice.warehouse.address.toUpperCase() }}
               </address>
             </div>
             <!-- /.col -->
             <div class="col-sm-4 invoice-col">
               <label>Invoice No.: {{ invoice.invoice_number }}</label>
+              <br>
+              <label>Order No.: {{ invoice.order.order_number }}</label>
               <br>
               <label>Date:</label>
               {{
@@ -65,14 +56,14 @@
           <!-- Table row -->
           <div class="row">
             <div class="col-xs-12">
-              <small class="pull-right no-print"> Confirmed By: {{ (invoice.confirmer) ? invoice.confirmer.name : 'Not Confirmed' }}</small>
+              <!-- <small class="pull-right no-print"> Confirmed By: {{ (invoice.confirmer) ? invoice.confirmer.name : 'Not Confirmed' }}</small> -->
               <legend>Invoice Products</legend>
               <table class="table table-bordered">
                 <thead>
                   <tr>
                     <th>
                       <div v-if="invoice.confirmed_by === null && checkPermission(['audit confirm actions'])">
-                        Confirm Items
+                        Approve Items
                       </div>
                       <div v-else>S/N</div>
                     </th>
@@ -81,9 +72,9 @@
                     <th>Quantity</th>
                     <th>Supplied</th>
                     <th>Balance</th>
-                    <th>Rate</th>
+                    <!-- <th>Rate</th>
                     <th>Per</th>
-                    <th>Amount</th>
+                    <th>Amount</th> -->
                   </tr>
                 </thead>
                 <tbody>
@@ -128,7 +119,7 @@
                       <!-- {{ invoice_item.type }}
                       <small>({{ (invoice_item.quantity - invoice_item.quantity_supplied) / invoice_item.quantity_per_carton }} CTN)</small> -->
                     </td>
-                    <td align="right">
+                    <!-- <td align="right">
                       {{
                         currency + Number(invoice_item.rate).toLocaleString()
                       }}
@@ -138,7 +129,7 @@
                       {{
                         currency + Number(invoice_item.amount).toLocaleString()
                       }}
-                    </td>
+                    </td> -->
                   </tr>
                   <tr v-if="checkPermission(['audit confirm actions']) && activate_confirm_button">
                     <td colspan="7">
@@ -149,11 +140,11 @@
                         title="Click to confirm"
                         @click="confirmInvoiceDetails()"
                       >
-                        <i class="fa fa-check" /> Click to save confirmation
+                        <i class="fa fa-check" /> Confirm Approval
                       </a>
                     </td>
                   </tr>
-                  <tr>
+                  <!-- <tr>
                     <td colspan="7" align="right">
                       <label>Subtotal</label>
                     </td>
@@ -181,7 +172,7 @@
                   </tr>
                   <tr>
                     <td colspan="8" align="right"><label>In Words: {{ inWords(invoice.amount).toUpperCase() + ' NAIRA ONLY' }}</label></td>
-                  </tr>
+                  </tr> -->
                 </tbody>
               </table>
               <p>
@@ -311,7 +302,11 @@ export default {
           .then(response => {
             if (response.confirmed === 'success') {
               app.activate_confirm_button = false;
-              app.$message('Invoice Items Confirmed Successfully');
+
+              app.invoice.invoice_items.forEach((invoice_item) => {
+                invoice_item.is_confirmed = 1;
+              });
+              app.$message('Invoice Items Approved Successfully');
             }
             app.confirm_loader = false;
           });

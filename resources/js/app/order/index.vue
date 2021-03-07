@@ -38,10 +38,21 @@
             {{ props.row.currency.code + Number(props.row.amount).toLocaleString() }}
           </div>
           <div slot="created_at" slot-scope="props">
-            {{ moment(props.row.created_at).format('MMMM Do YYYY, h:mm:ss a') }}
+            {{ moment(props.row.created_at).format('MMMM Do, YYYY') }}
           </div>
           <div slot="action" slot-scope="props">
-            <a class="btn btn-primary" @click="order=props.row; page.option='order_details'"><i class="el-icon-tickets" /> Details</a>
+            <el-tooltip class="item" effect="dark" content="View Order Details" placement="bottom-start">
+              <a v-if="props.row.order_status !== 'cancelled'" class="btn btn-primary" @click="order=props.row; page.option='order_details'; selected_row_index = props.index"><i class="el-icon-view" /></a>
+            </el-tooltip>
+            <el-tooltip class="item" effect="dark" content="Create Invoice" placement="bottom">
+              <a v-if="props.row.order_status === 'pending' && checkPermission(['create invoice'])" class="btn btn-success" @click="createOrderInvoice(props.index, props.row); selected_row_index = props.index"><i class="el-icon-tickets" /></a>
+            </el-tooltip>
+            <el-tooltip class="item" effect="dark" content="Restore Order" placement="bottom">
+              <a v-if="props.row.order_status === 'cancelled' && checkPermission(['cancel order'])" class="btn btn-warning" @click="restoreOrder(props.index, props.row);"><i class="el-icon-refresh-left" /></a>
+            </el-tooltip>
+            <el-tooltip class="item" effect="dark" content="Cancel Order" placement="bottom-end">
+              <a v-if="props.row.order_status === 'pending' && checkPermission(['cancel order'])" class="btn btn-danger" @click="cancelOrder(props.index, props.row);"><i class="el-icon-close" /></a>
+            </el-tooltip>
             <!-- <el-dropdown class="avatar-container right-menu-item hover-effect" trigger="click">
               <div class="avatar-wrapper" style="color: brown">
                 <label style="cursor:pointer"><i class="el-icon-more-outline" /></label>
@@ -67,6 +78,7 @@
     </div>
     <div v-if="page.option==='order_details'">
       <a class="btn btn-danger no-print" @click="page.option='list'">Go Back</a>
+      <a v-if="order.order_status === 'pending' && checkPermission(['create invoice'])" class="btn btn-success" @click="createOrderInvoice(selected_row_index, order);"><i class="el-icon-tickets" />Create invoice</a>
       <order-details :order="order" :page="page" :company-name="params.company_name" />
     </div>
   </div>
@@ -83,6 +95,7 @@ const fetchOrders = new Resource('order/general');
 const approveOrderResource = new Resource('order/general/approve');
 const deliverOrderResource = new Resource('order/general/deliver');
 const cancelOrderResource = new Resource('order/general/cancel');
+const createOrderinvoiceResource = new Resource('invoice/general/store');
 // const deleteItemInStock = new Resource('stock/items-in-stock/delete');
 export default {
   components: { OrderDetails },
@@ -91,21 +104,20 @@ export default {
       warehouses: [],
       orders: [],
       order_statuses: [],
-      columns: ['action', 'order_number', 'customer.user.name', 'amount', 'created_at', 'order_status'],
+      columns: ['action', 'order_number', 'site.name', 'created_at', 'order_status'],
 
       options: {
         headings: {
-          'customer.user.name': 'Customer',
+          'site.name': 'Order By',
           order_number: 'Order Number',
-          amount: 'Amount',
           created_at: 'Date',
           order_status: 'Status',
 
           // id: 'S/N',
         },
         // editableColumns:['name', 'category.name', 'sku'],
-        sortable: ['order_number', 'customer.user.name', 'created_at', 'order_status'],
-        filterable: ['order_number', 'customer.user.name', 'created_at', 'order_status'],
+        sortable: ['order_number', 'site.name', 'created_at', 'order_status'],
+        filterable: ['order_number', 'site.name', 'created_at', 'order_status'],
       },
       page: {
         option: 'list',
@@ -156,7 +168,7 @@ export default {
       fetchOrders.list(param)
         .then(response => {
           app.orders = response.orders;
-          app.in_warehouse = 'in ' + app.warehouses[param.warehouse_index].name;
+          app.in_warehouse = 'for ' + app.warehouses[param.warehouse_index].name;
           loader.hide();
         })
         .catch(error => {
@@ -182,11 +194,51 @@ export default {
     },
     cancelOrder(index, order){
       const app = this;
-      const param = { status: 'cancelled' };
+      if (confirm('Cancel Order? Click to confirm')) {
+        const param = { status: 'cancelled' };
+        cancelOrderResource.update(order.id, param)
+          .then(response => {
+            app.orders.splice(index - 1, 1);
+          });
+      }
+    },
+    restoreOrder(index, order){
+      const app = this;
+      if (confirm('Restore Order? Click to confirm')) {
+        const param = { status: 'pending' };
+        cancelOrderResource.update(order.id, param)
+          .then(response => {
+            app.orders.splice(index - 1, 1);
+          });
+      }
+    },
+    processOrder(index, order){
+      const app = this;
+      const param = { status: 'processed' };
       cancelOrderResource.update(order.id, param)
         .then(response => {
+          app.order.order_status = 'processed';
           app.orders.splice(index - 1, 1);
         });
+    },
+    createOrderInvoice(index, order){
+      const app = this;
+      if (confirm('Create Invoice for this Order: ' + order.order_number + '? Click to confirm')) {
+        var param;
+        param = order;
+        param.invoice_items = order.order_items;
+        param.customer_id = order.site_id;
+        param.order_id = order.id;
+        param.invoice_date = order.created_at;
+        param.status = order.order_status;
+        const loader = createOrderinvoiceResource.loaderShow();
+        createOrderinvoiceResource.store(param)
+          .then(response => {
+            app.processOrder(index, order);
+            app.$message('Order Processed and Invoice Created');
+            loader.hide();
+          });
+      }
     },
 
   },

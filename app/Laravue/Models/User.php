@@ -3,6 +3,7 @@
 namespace App\Laravue\Models;
 
 use App\ActivityLog;
+use App\Models\Warehouse\Site;
 use App\Models\Warehouse\Warehouse;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -27,6 +28,10 @@ class User extends Authenticatable
     public function warehouses()
     {
         return $this->belongsToMany(Warehouse::class);
+    }
+    public function sites()
+    {
+        return $this->belongsToMany(Site::class);
     }
     public function logs()
     {
@@ -106,7 +111,6 @@ class User extends Authenticatable
             if ($role->isAdmin()) {
                 return true;
             }
-
         }
 
         return false;

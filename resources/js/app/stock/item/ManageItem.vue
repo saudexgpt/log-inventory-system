@@ -22,9 +22,9 @@
           <div slot="category.name" slot-scope="{row}">
             {{ row.category.name }}
           </div>
-          <div slot="price.sale_price" slot-scope="{row}">
+          <!-- <div slot="price.sale_price" slot-scope="{row}">
             <span align="right">{{ '₦' + Number(row.price.sale_price).toLocaleString() }}</span>
-          </div>
+          </div> -->
           <div slot="action" slot-scope="props">
             <a class="btn btn-primary" @click="item=props.row; selected_row_index=props.index; page.option = 'edit_item'"><i class="fa fa-edit" /> </a>
             <a class="btn btn-danger" @click="confirmDelete(props)"><i class="fa fa-trash" /> </a>
@@ -58,7 +58,7 @@ export default {
     return {
       categories: [],
       items: [],
-      columns: ['action', 'name', 'category.name', /* 'package_type', 'quantity_per_carton', */ 'price.sale_price'],
+      columns: ['action', 'name', /* 'category.name',  'package_type', 'quantity_per_carton', */ 'minimum_quantity_threshold', 'auto_restock_quantity'],
 
       options: {
         headings: {
@@ -66,7 +66,8 @@ export default {
           'category.name': 'Category',
           package_type: 'Package Type',
           quantity_per_carton: 'Quantity Per Carton',
-          'price.sale_price': 'Rate',
+          minimum_quantity_threshold: 'Minimum Quantity Threshold for Warehouses',
+          auto_restock_quantity: 'Auto Restock Quantity',
           // id: 'S/N',
         },
         // editableColumns:['name', 'category.name', 'sku'],
@@ -157,8 +158,8 @@ export default {
       this.downloadLoading = true;
       import('@/vendor/Export2Excel').then(excel => {
         // const multiHeader = [['List of Products', '', '', '', '']];
-        const tHeader = ['PRODUCT', 'CATEGORY', 'PACKAGE_TYPE', 'QUANTITY_PER_CARTON', 'RATE'];
-        const filterVal = ['name', 'category.name', 'package_type', 'quantity_per_carton', 'price.sale_price'];
+        const tHeader = ['PRODUCT', 'CATEGORY', 'MMINIMUM QUANTITY THRESHOLD FOR WAREHOUSES'];
+        const filterVal = ['name', 'category.name', 'minimum_quantity_threshold'];
         const list = this.items;
         const data = this.formatJson(filterVal, list);
         excel.export_json_to_excel({

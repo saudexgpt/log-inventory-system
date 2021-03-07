@@ -10,19 +10,17 @@
       <aside>
         <el-form ref="form" :model="form" label-width="120px">
           <el-row :gutter="5">
-            <el-col :xs="24" :sm="12" :md="12">
-              <label for="">Select Staff to assign to Warehouse</label>
+            <el-col :xs="24" :sm="24" :md="24">
+              <label for="">Select Users to assign/remove to/from {{ warehouse.name }}</label><br>
               <el-select v-model="form.user_ids" multiple="true">
                 <el-option v-for="(user, index) in users" :key="index" :value="user.id" :label="user.name" />
               </el-select>
-            </el-col>
-            <el-col :xs="24" :sm="12" :md="12">
-              <el-form-item label="">
-                <el-button type="success" @click="assignUsers"><svg-icon icon-class="edit" />
-                  Assign
-                </el-button>
-              </el-form-item>
-
+              <el-button type="success" @click="assignUsers"><i class="el-icon-check" />
+                Assign
+              </el-button>
+              <el-button type="danger" @click="removeUsers"><i class="el-icon-close" />
+                Remove
+              </el-button>
             </el-col>
           </el-row>
         </el-form>
@@ -37,6 +35,8 @@
 import Resource from '@/api/resource';
 // import Vue from 'vue';
 const assignUsersToWarehouse = new Resource('warehouse/add-user-to-warehouse');
+const removeUsersFormWarehouse = new Resource('warehouse/remove-user-from-warehouse');
+
 export default {
   // name: 'WarehouseDetails',
 
@@ -87,7 +87,18 @@ export default {
       const app = this;
       assignUsersToWarehouse.store(app.form)
         .then(response => {
-          app.$message({ message: 'Warehouse Updated Successfully!!!', type: 'success' });
+          app.$message({ message: 'Users Assigned Successfully!!!', type: 'success' });
+          app.warehouse.users = response.warehouse_users;
+        })
+        .catch(error => {
+          alert(error.message);
+        });
+    },
+    removeUsers() {
+      const app = this;
+      removeUsersFormWarehouse.store(app.form)
+        .then(response => {
+          app.$message({ message: 'Users Removed Successfully!!!', type: 'success' });
           app.warehouse.users = response.warehouse_users;
         })
         .catch(error => {

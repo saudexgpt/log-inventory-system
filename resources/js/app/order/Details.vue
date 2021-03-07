@@ -6,7 +6,7 @@
           <!-- title row -->
           <div class="row">
             <div class="col-xs-12 page-header">
-              <img src="svg/logo.png" alt="Company Logo" width="50">
+              <img src="svg/logo.png" alt="Company Logo" width="150">
               <span><label>{{ companyName }}</label></span>
             </div>
             <!-- /.col -->
@@ -16,16 +16,13 @@
             <div class="col-sm-4 invoice-col">
               <label>Customer Details</label>
               <address>
-                <label>{{ order.customer.user.name.toUpperCase() }}</label><br>
-                {{ (order.customer.type) ? order.customer.type.name.toUpperCase() : '' }}<br>
-                Phone: {{ order.customer.user.phone }}<br>
-                Email: {{ order.customer.user.email }}<br>
-                {{ order.customer.user.address }}
+                <label>{{ order.site.name.toUpperCase() }}</label><br>
+                Address: {{ order.site.address }}
               </address>
             </div>
             <!-- /.col -->
             <div class="col-sm-4 invoice-col">
-              <label>Concerned Warehouse</label>
+              <label>Supplying Warehouse</label>
               <address>
                 <strong>{{ order.warehouse.name.toUpperCase() }}</strong><br>
                 {{ order.warehouse.address }}<br>
@@ -47,22 +44,22 @@
               <table class="table table-bordered table-striped">
                 <thead>
                   <tr>
-                    <th>Quantity</th>
                     <th>Product</th>
-                    <th>SKU (S/N)</th>
+                    <th>Quantity</th>
+                    <!-- <th>SKU (S/N)</th>
                     <th>Description</th>
                     <th>Tax</th>
-                    <th>Amount</th>
+                    <th>Amount</th> -->
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="(order_item, index) in order.order_items" :key="index">
-                    <td>{{ order_item.quantity }}</td>
                     <td>{{ order_item.item.name }}</td>
-                    <td>{{ order_item.item.sku }}</td>
+                    <td>{{ order_item.quantity }}</td>
+                    <!-- <td>{{ order_item.item.sku }}</td>
                     <td>{{ order_item.item.description }}</td>
                     <td>{{ (order_item.tax * 100).toFixed(2) }}%</td>
-                    <td align="right">{{ order.currency.code + Number(order_item.total).toLocaleString() }}</td>
+                    <td align="right">{{ order.currency.code + Number(order_item.total).toLocaleString() }}</td> -->
                   </tr>
                 </tbody>
               </table>
@@ -71,43 +68,6 @@
           </div>
           <!-- /.row -->
 
-          <div class="row">
-            <!-- accepted payments column -->
-            <div class="col-xs-6">
-              <p class="lead">Payment Methods:</p>
-              <p class="text-muted well well-sm no-shadow" style="margin-top: 10px;">
-                Configure Payments for this order here
-              </p>
-            </div>
-            <!-- /.col -->
-            <div class="col-xs-6">
-              <p class="lead">Amount Due</p>
-
-              <div class="table-responsive">
-                <table class="table">
-                  <tbody>
-                    <tr>
-                      <td colspan="4" align="right"><label>Subtotal</label></td>
-                      <td align="right">{{ order.currency.code + Number(order.subtotal).toLocaleString() }}</td>
-                    </tr>
-                    <tr>
-                      <td colspan="4" align="right"><label>Discount</label></td>
-                      <td align="right">{{ order.currency.code + Number(order.discount).toLocaleString() }}</td>
-                    </tr>
-                    <tr>
-                      <td colspan="4" align="right"><label>Tax</label></td>
-                      <td align="right">{{ order.currency.code + Number(order.tax).toLocaleString() }}</td>
-                    </tr>
-                    <tr>
-                      <td colspan="4" align="right"><label>Grand Total</label></td>
-                      <td align="right"><label style="color: green">{{ order.currency.code + Number(order.amount).toLocaleString() }}</label></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <!-- /.col -->
-          </div>
           <!-- /.row -->
         </section>
       </el-tab-pane>
@@ -146,7 +106,7 @@ export default {
     },
     companyName: {
       type: String,
-      default: () => ('Warehouse Management System'),
+      default: () => ('Inventory Management System'),
     },
   },
   data() {

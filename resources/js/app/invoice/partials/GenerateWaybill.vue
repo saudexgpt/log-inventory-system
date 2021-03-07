@@ -17,7 +17,7 @@
           <el-form ref="form" :model="form" label-width="120px">
             <el-row :gutter="5" class="padded">
               <el-col :xs="24" :sm="12" :md="12">
-                <label for="">Select Warehouse</label>
+                <label for="">Supplying Warehouse</label>
                 <el-select
                   v-model="form.warehouse_id"
                   placeholder="Select Warehouse"
@@ -35,7 +35,7 @@
               </el-col>
               <el-col :xs="24" :sm="12" :md="12">
                 <label for="">Search Invoice</label>
-                <small>(Only confirmed invoice by auditors will be displayed for waybilling)</small>
+                <small>(Only approved invoices will be displayed for waybilling)</small>
                 <el-select
                   v-model="selected_invoice"
                   placeholder="Select Invoice"
@@ -51,7 +51,7 @@
                     :value="invoice_index"
                     :label="
                       invoice.customer
-                        ? invoice.customer.user.name +
+                        ? invoice.customer.name +
                           '[ ' +
                           invoice.invoice_number +
                           '] '

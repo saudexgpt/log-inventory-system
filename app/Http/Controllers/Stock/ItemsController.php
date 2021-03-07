@@ -18,7 +18,7 @@ class ItemsController extends Controller
     public function index()
     {
         //
-        $items = Item::with(['category', 'stocks', 'taxes', 'price'])->get();
+        $items = Item::/*with(['category', 'stocks', 'taxes', 'price'])->*/get();
 
         return response()->json(compact('items'));
     }
@@ -53,6 +53,8 @@ class ItemsController extends Controller
         $tax_ids =  $request->tax_ids;
         $name = $request->name;
         $category_id = $request->category_id;
+        $item->minimum_quantity_threshold = $request->minimum_quantity_threshold;
+        $item->auto_restock_quantity = $request->auto_restock_quantity;
         // $sku = $request->sku;
         // $package_type = $request->package_type;
         // $quantity_per_carton = $request->quantity_per_carton;
@@ -65,28 +67,28 @@ class ItemsController extends Controller
             $item->name = $name;
             // $item->package_type = $package_type;
             // $item->quantity_per_carton = $quantity_per_carton;
-            $item->category_id = $category_id;
+            // $item->category_id = $category_id;
             // $item->sku = $sku;
             $item->description = $description;
             $item->picture = $picture;
             $item->save();
 
             // save item taxes
-            if ($tax_ids) {
-                foreach ($tax_ids  as $tax_id) {
-                    $item_tax = new ItemTax();
-                    $item_tax->tax_id = $tax_id;
-                    $item_tax->item_id = $item->id;
-                    $item_tax->save();
-                }
-            }
-            //save item price
-            $item_price = new ItemPrice();
-            $item_price->item_id = $item->id;
-            $item_price->currency_id = $request->currency_id;
-            $item_price->sale_price = $request->sale_price;
-            // $item_price->purchase_price = $request->purchase_price;
-            $item_price->save();
+            // if ($tax_ids) {
+            //     foreach ($tax_ids  as $tax_id) {
+            //         $item_tax = new ItemTax();
+            //         $item_tax->tax_id = $tax_id;
+            //         $item_tax->item_id = $item->id;
+            //         $item_tax->save();
+            //     }
+            // }
+            // //save item price
+            // $item_price = new ItemPrice();
+            // $item_price->item_id = $item->id;
+            // $item_price->currency_id = $request->currency_id;
+            // $item_price->sale_price = $request->sale_price;
+            // // $item_price->purchase_price = $request->purchase_price;
+            // $item_price->save();
             // log this action
             $title = "Product Added";
             $description = $name . " added to list of products by " . $user->name;;
@@ -112,7 +114,9 @@ class ItemsController extends Controller
         $user = $this->getUser();
         $tax_ids =  $request->tax_ids;
         $item->name = $request->name;
-        $item->category_id = $request->category_id;
+        // $item->category_id = $request->category_id;
+        $item->minimum_quantity_threshold = $request->minimum_quantity_threshold;
+        $item->auto_restock_quantity = $request->auto_restock_quantity;
         // $item->package_type = $request->package_type;
         // $item->quantity_per_carton = $request->quantity_per_carton;
         // $item->sku = $request->sku;
@@ -121,28 +125,28 @@ class ItemsController extends Controller
         $item->save();
 
         //update item price
-        $item_price = ItemPrice::where('item_id', $item->id)->first();
-        if (!$item_price) {
-            $item_price = new ItemPrice();
-        }
-        $item_price->item_id = $item->id;
-        $item_price->currency_id = $request->currency_id;
-        $item_price->sale_price = $request->sale_price;
-        // $item_price->purchase_price = $request->purchase_price;
-        $item_price->save();
+        // $item_price = ItemPrice::where('item_id', $item->id)->first();
+        // if (!$item_price) {
+        //     $item_price = new ItemPrice();
+        // }
+        // $item_price->item_id = $item->id;
+        // $item_price->currency_id = $request->currency_id;
+        // $item_price->sale_price = $request->sale_price;
+        // // $item_price->purchase_price = $request->purchase_price;
+        // $item_price->save();
 
-        //update item tax
-        if ($tax_ids) {
-            foreach ($tax_ids  as $tax_id) {
-                $item_tax = ItemTax::where(['item_id' => $item->id, 'tax_id' => $tax_id])->first();
-                if (!$item_tax) {
-                    $item_tax = new ItemTax();
-                    $item_tax->tax_id = $tax_id;
-                    $item_tax->item_id = $item->id;
-                    $item_tax->save();
-                }
-            }
-        }
+        // //update item tax
+        // if ($tax_ids) {
+        //     foreach ($tax_ids  as $tax_id) {
+        //         $item_tax = ItemTax::where(['item_id' => $item->id, 'tax_id' => $tax_id])->first();
+        //         if (!$item_tax) {
+        //             $item_tax = new ItemTax();
+        //             $item_tax->tax_id = $tax_id;
+        //             $item_tax->item_id = $item->id;
+        //             $item_tax->save();
+        //         }
+        //     }
+        // }
         $title = "Product details modified";
         $description = "Product information with ID $item->id  was modified by " . $user->name;;
         $roles = ['assistant admin', 'warehouse manager', 'warehouse auditor'];

@@ -29,10 +29,10 @@ class ItemStockSubBatch extends Model
     {
         return $this->belongsTo(Item::class);
     }
-    // public function itemStock()
-    // {
-    //     return $this->belongsTo(ItemStock::class);
-    // }
+    public function siteItemStocks()
+    {
+        return $this->hasMany(SiteItemStock::class);
+    }
     public function stocker()
     {
         return $this->belongsTo(User::class, 'stocked_by', 'id');
@@ -295,9 +295,34 @@ class ItemStockSubBatch extends Model
             }
         }
     }
+    private function stockSiteWithGoods($warehouse_id, $site_id, $item_stock_sub_batch_id, $item_id, $quantity, $stocked_by)
+    {
+        $site_item_stock = new SiteItemStock();
+        $site_item_stock->warehouse_id = $warehouse_id;
+        $site_item_stock->site_id = $site_id;
+        $site_item_stock->item_stock_sub_batch_id = $item_stock_sub_batch_id;
+        $site_item_stock->item_id = $item_id;
+        $site_item_stock->quantity = $quantity;
+        $site_item_stock->used = 0;
+        $site_item_stock->returned = 0;
+        $site_item_stock->balance = $quantity;
+        $site_item_stock->stocked_by = $stocked_by;
+        $site_item_stock->save();
+    }
     public function confirmItemInStockAsSupplied($dispatch_products)
     {
         foreach ($dispatch_products as $dispatch_product) {
+            $waybill = $dispatch_product->waybill;
+            $waybill_item = $dispatch_product->waybillItem;
+            $invoice = $waybill_item->invoice;
+            $warehouse_id = $invoice->warehouse_id;
+            $site_id = $invoice->customer_id;
+            $item_stock_sub_batch_id = $dispatch_product->item_stock_sub_batch_id;
+            $item_id = $waybill_item->item_id;
+            $quantity = $dispatch_product->quantity_supplied;
+            $stocked_by = $waybill->confirmed_by; // the person that confirms the waybill is the stocker
+            // stock up the site with the goods
+            $this->stockSiteWithGoods($warehouse_id, $site_id, $item_stock_sub_batch_id, $item_id, $quantity, $stocked_by);
 
             $dispatch_product->status = 'delivered';
             $dispatch_product->save();

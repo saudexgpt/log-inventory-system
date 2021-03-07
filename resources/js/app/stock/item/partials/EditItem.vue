@@ -13,16 +13,20 @@
             <el-col :xs="24" :sm="12" :md="12">
               <label for="">Product Name</label>
               <el-input v-model="form.name" placeholder="Enter item name" class="span" />
-              <label for="">Select Product Category</label>
+              <!-- <label for="">Select Product Category</label>
               <el-select v-model="form.category_id" placeholder="Select item category" filterable class="span">
                 <el-option v-for="(category, index) in categories" :key="index" :value="category.id" :label="category.name" />
 
-              </el-select>
+              </el-select> -->
               <label for="">Product Description</label>
               <textarea v-model="form.description" placeholder="Product Description" rows="1" class="form-control" />
-              <el-input v-model="item_price.sale_price" type="number" min="0" placeholder="Selling Price" class="span">
+              <label for="">Minimum Quantity Threshold for Warehouse</label>
+              <el-input v-model="form.minimum_quantity_threshold" type="number" min="0" placeholder="Minimum Quantity Threshold" class="span" />
+              <label for="">Auto Restock Quantity</label>
+              <el-input v-model="form.auto_restock_quantity" type="number" min="0" placeholder="Auto Restock Quantity" class="span" />
+              <!-- <el-input v-model="item_price.sale_price" type="number" min="0" placeholder="Selling Price" class="span">
                 <template slot="prepend">{{ params.currencies[0].code }}</template>
-              </el-input>
+              </el-input> -->
             </el-col>
             <el-col :xs="24" :sm="12" :md="12">
               <p />
@@ -40,7 +44,7 @@
               <br><br>
 
               <a @click="imagecropperShow=true">
-                <img :src="form.picture" width="150">
+                <img :src="'/' +form.picture" width="150">
                 Click to upload item image
               </a>
 
@@ -129,6 +133,8 @@ export default {
         package_type: '',
         quantity_per_carton: '',
         category_id: '',
+        minimum_quantity_threshold: '',
+        auto_restock_quantity: '',
         description: '',
         picture: 'images/no-image.jpeg',
         // tax_ids: [],

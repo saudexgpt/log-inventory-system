@@ -3,7 +3,7 @@
     <!-- title row -->
     <div class="row">
       <div class="col-xs-12 page-header" align="center">
-        <img src="svg/logo.png" alt="Company Logo" width="150">
+        <img src="/svg/logo.png" alt="Company Logo" width="150">
         <span>
           <label>{{ companyName }}</label>
           <div class="pull-right no-print">
@@ -25,17 +25,19 @@
       <div class="col-xs-8 table-responsive">
         <label>Customer Details</label>
         <address>
-          <label>{{ waybill.waybill_items[0].invoice.customer.user.name.toUpperCase() }}</label><br>
-          {{ (waybill.waybill_items[0].invoice.customer.type) ? waybill.waybill_items[0].invoice.customer.type.name.toUpperCase() : '' }}<br>
-          Phone: {{ waybill.waybill_items[0].invoice.customer.user.phone }}<br>
-          Email: {{ waybill.waybill_items[0].invoice.customer.user.email }}<br>
-          {{ waybill.waybill_items[0].invoice.customer.user.address }}
+          <label>{{ waybill.invoices[0].customer.name.toUpperCase() }}</label><br><br>
+          {{ waybill.invoices[0].customer.address }}
         </address>
         <legend>Invoice Products</legend>
         <table class="table table-bordered">
           <thead>
             <tr>
-              <th>S/N</th>
+              <th>
+                <div
+                  v-if="waybill.confirmed_by === null && checkPermission(['audit confirm actions'])"
+                >Confirm Items</div>
+                <div v-else>S/N</div>
+              </th>
               <th>Invoice No.</th>
               <!-- <th>Customer</th> -->
               <th>Product</th>
@@ -46,8 +48,23 @@
           </thead>
           <tbody>
             <tr v-for="(waybill_item, index) in waybill.waybill_items" :key="index">
-              <td>{{ index + 1 }}</td>
+              <td>
+                <div :id="waybill_item.id">
+                  <div
+                    v-if="waybill_item.is_confirmed === '0' && checkPermission(['audit confirm actions'])"
+                  >
+                    <input
+                      v-model="confirmed_items"
+                      :value="waybill_item.id"
+                      type="checkbox"
+                      @change="activateConfirmButton()"
+                    >
+                  </div>
+                  <div v-else>{{ index + 1 }}</div>
+                </div>
+              </td>
               <td>{{ waybill_item.invoice.invoice_number }}</td>
+              <!-- <td>{{ waybill_item.invoice.customer.user.name.toUpperCase() }}</td> -->
               <td>{{ waybill_item.item.name }}</td>
               <!-- <td>{{ waybill_item.item.description }}</td> -->
               <td>{{ waybill_item.quantity }}
@@ -60,53 +77,86 @@
                 </div>
               </td>
               <!-- <td>
-                <div v-for="(batch, batch_index) in waybill_item.invoice_item.batches" :key="batch_index">
-                  <span v-if="batch.to_supply === waybill_item.quantity">
-                    {{ moment(batch.item_stock_batch.expiry_date).format('MMMM Do YYYY') }}
-                  </span>
-                </div>
-              </td> -->
+                  <div v-for="(batch, batch_index) in waybill_item.invoice_item.batches" :key="batch_index">
+                    <span v-if="batch.to_supply === waybill_item.quantity">
+                      {{ moment(batch.item_stock_batch.expiry_date).format('MMMM Do YYYY') }}
+                    </span>
+                  </div>
+                </td> -->
               <!-- <td align="right">{{ currency + Number(waybill_item.rate).toLocaleString() }}</td>
-              <td>{{ waybill_item.type }}</td>
-              <td align="right">{{ currency + Number(waybill_item.amount).toLocaleString() }}</td> -->
+                <td>{{ waybill_item.type }}</td>
+                <td align="right">{{ currency + Number(waybill_item.amount).toLocaleString() }}</td>-->
             </tr>
             <!-- <tr>
-              <td colspan="4" align="right"><label>Subtotal</label></td>
-              <td align="right">{{ currency + Number(waybill.invoice.subtotal).toLocaleString() }}</td>
-            </tr>
-            <tr>
-              <td colspan="4" align="right"><label>Discount</label></td>
-              <td align="right">{{ currency + Number(waybill.invoice.discount).toLocaleString() }}</td>
-            </tr>
-            <tr>
-              <td colspan="4" align="right"><label>Grand Total</label></td>
-              <td align="right"><label style="color: green">{{ currency + Number(waybill.invoice.amount).toLocaleString() }}</label></td>
-            </tr> -->
+                <td colspan="4" align="right"><label>Subtotal</label></td>
+                <td align="right">{{ currency + Number(waybill.invoice.subtotal).toLocaleString() }}</td>
+              </tr>
+              <tr>
+                <td colspan="4" align="right"><label>Discount</label></td>
+                <td align="right">{{ currency + Number(waybill.invoice.discount).toLocaleString() }}</td>
+              </tr>
+              <tr>
+                <td colspan="4" align="right"><label>Grand Total</label></td>
+                <td align="right"><label style="color: green">{{ currency + Number(waybill.invoice.amount).toLocaleString() }}</label></td>
+              </tr>-->
           </tbody>
         </table>
+        <a
+          v-if="checkPermission(['audit confirm actions']) && activate_confirm_button"
+          class="btn btn-success"
+          title="Click to confirm"
+          @click="confirmWaybillDetails()"
+        >
+          <i class="fa fa-check" /> Click to save confirmation
+        </a>
       </div>
       <div class="col-xs-4 table-responsive">
-        <label>Waybill No.: {{ waybill.waybill_no }}</label>
-        <label>Dispatched By.: {{ waybill.dispatch_company }}</label>
-        <br>
-        <label>Date:</label> {{ moment(waybill.created_at).format('MMMM Do YYYY') }}
-        <table v-if="waybill.dispatcher" class="table table-bordered">
-          <tbody>
-            <tr>
-              <td><label>Vehicle No.:</label> {{ waybill.dispatcher.vehicle.plate_no }}<br></td>
-            </tr>
-            <tr>
-              <td>Dispatched By:</td>
-            </tr>
-            <tr v-for="(vehicle_driver, index) in waybill.dispatcher.vehicle.vehicle_drivers" :key="index">
-              <td v-if="vehicle_driver.driver">
-                <label>{{ vehicle_driver.type }} Dispatcher</label><br>
-                <label>Name:</label> {{ vehicle_driver.driver.user.name }}<br>
-                <label>Phone:</label> {{ vehicle_driver.driver.user.phone }}<br>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <label>Waybill No.: {{ waybill.waybill_no }}</label><br>
+        <label>Date:</label>
+        {{ moment(waybill.created_at).format('MMMM Do YYYY') }}
+        <div v-if="waybill.trips.length > 0">
+          <table class="table table-bordered">
+            <tbody>
+              <tr>
+                <td>
+                  <label>Dispatched By:</label>
+                  {{ waybill.trips[0].dispatch_company }}
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>Trip No.:</label>
+                  {{ waybill.trips[0].trip_no }}
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>Vehicle No.:</label>
+                  {{ waybill.trips[0].vehicle_no }}
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>Dispatchers:</label>
+                  {{ waybill.trips[0].dispatchers }}
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>Description:</label>
+                  {{ waybill.trips[0].description }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div v-else>
+          <span v-if="checkPermission(['manage waybill cost'])">
+            <p>You need to add this waybill to a vehicle for delivery. Click the button below to do so</p>
+            <router-link :to="{name:'WaybillDeliveryCost'}" class="btn btn-default"> Add Waybill to Trip</router-link>
+          </span>
+
+        </div>
       </div>
       <!-- /.col -->
     </div>

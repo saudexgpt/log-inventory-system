@@ -9,6 +9,7 @@ use App\Models\Order\OrderPayment;
 use App\Models\Order\OrderStatus;
 use App\Models\Order\OrderItem;
 use App\Models\Order\DispatchedOrder;
+use App\Models\Warehouse\Site;
 use Illuminate\Http\Request;
 
 class OrdersController extends Controller
@@ -23,17 +24,22 @@ class OrdersController extends Controller
         //
         $user = $this->getUser();
         $warehouse_id = $request->warehouse_id;
-        $orders = Order::with(['warehouse', 'customer.user', 'customer.type', 'orderItems.item','histories'=>function($q) {
-                $q->orderBy('id','DESC');
+
+        $orders = Order::with([
+            'warehouse', 'site', 'orderItems.item', 'histories' => function ($q) {
+                $q->orderBy('id', 'DESC');
             },
-        'currency'])->where('warehouse_id', $warehouse_id)->get();
+            'currency'
+        ])->where('warehouse_id', $warehouse_id)->get();
         if (isset($request->status) && $request->status != '') {
             ////// query by status //////////////
             $status = $request->status;
-            $orders = Order::with(['warehouse', 'customer.user', 'customer.type', 'orderItems.item', 'histories' => function ($q) {
+            $orders = Order::with([
+                'warehouse', 'site', 'orderItems.item', 'histories' => function ($q) {
                     $q->orderBy('id', 'DESC');
                 },
-            'currency'])->where(['warehouse_id'=>$warehouse_id, 'order_status'=>$status])->get();
+                'currency'
+            ])->where(['warehouse_id' => $warehouse_id, 'order_status' => $status])->get();
         }
         return response()->json(compact('orders'));
     }
@@ -65,27 +71,34 @@ class OrdersController extends Controller
     {
         //
         $user = $this->getUser();
-        $order_items = $request->order_items;
+        $site_id = $request->site_id;
+        $warehouse = Site::find($site_id)->warehouse_id;
+        $order_items = json_decode(json_encode($request->order_items));
+
         $order = new Order();
-        $order->warehouse_id        = $request->warehouse_id;
-        $order->customer_id         = $request->customer_id;
-        $order->currency_id         = $request->currency_id;
-        $order->order_number        = $this->nextInvoiceNo();
-        $order->order_status        = $request->order_status;
-        $order->ordered_at          = date('Y-m-d H:i:s', strtotime($request->ordered_at));
-        $order->subtotal            = $request->subtotal;
-        $order->discount            = $request->discount;
-        $order->tax                 = $request->tax;
-        $order->amount              = $request->amount;
+        $order->warehouse_id        = $warehouse;
+        $order->site_id             = $site_id;
+        // $order->currency_id         = $request->currency_id;
+        $order->order_status        = 'pending';
+        // $order->ordered_at          = date('Y-m-d H:i:s', strtotime('now'));
+        // $order->subtotal            = $request->subtotal;
+        // $order->discount            = $request->discount;
+        // $order->tax                 = $request->tax;
+        // $order->amount              = $request->amount;
         $order->notes               = $request->notes;
-        $order->save();
+        if ($order->save()) {
+            $order->order_number        = $this->getReceiptNo('#', $order->id);
+            $order->save();
+        }
+
+
         $description = "New $order->order_status order ($order->order_number) created by: $user->name ($user->email)";
         //log this action to order history
         $this->createOrderHistory($order, $description);
         //create items ordered for
         $this->createOrderItems($order, $order_items);
         //////update next invoice number/////
-        $this->incrementInvoiceNo();
+        // $this->incrementInvoiceNo();
         return $this->show($order);
     }
 
@@ -96,7 +109,6 @@ class OrdersController extends Controller
         $order_history->status_code = $order->order_status;
         $order_history->description = $description;
         $order_history->save();
-
     }
 
     private function createOrderItems($order, $order_items)
@@ -105,14 +117,13 @@ class OrdersController extends Controller
 
             $order_item_obj = new OrderItem();
             $order_item_obj->order_id = $order->id;
-            $order_item_obj->item_id = $order_item['item_id'];
-            $order_item_obj->quantity = $order_item['quantity'];
-            $order_item_obj->price = $order_item['price'];
-            $order_item_obj->total = $order_item['total'];
-            $order_item_obj->tax = $order_item['tax'];
+            $order_item_obj->item_id = $order_item->item_id;
+            $order_item_obj->quantity = $order_item->quantity;
+            // $order_item_obj->price = $order_item['price'];
+            // $order_item_obj->total = $order_item['total'];
+            // $order_item_obj->tax = $order_item['tax'];
             $order_item_obj->save();
         }
-
     }
 
     /**
@@ -124,10 +135,12 @@ class OrdersController extends Controller
     public function show(Order $order)
     {
         //
-        $order =  $order->with(['warehouse', 'customer.user', 'customer.type', 'orderItems.item', 'histories' => function ($q) {
+        $order =  $order->with([
+            'warehouse', 'site', 'orderItems.item', 'histories' => function ($q) {
                 $q->orderBy('id', 'DESC');
             },
-        'currency'])->find($order->id);
+            'currency'
+        ])->find($order->id);
         return response()->json(compact('order'), 200);
     }
 
@@ -144,7 +157,7 @@ class OrdersController extends Controller
         $status = $request->status;
         $order->order_status = $status;
         $order->save();
-        $description = "Order ($order->order_number) status changed to ".strtoupper($order->order_status)." by: $user->name ($user->email)";
+        $description = "Order ($order->order_number) status changed to " . strtoupper($order->order_status) . " by: $user->name ($user->email)";
         //log this action to order history
         $this->createOrderHistory($order, $description);
         return $this->show($order);

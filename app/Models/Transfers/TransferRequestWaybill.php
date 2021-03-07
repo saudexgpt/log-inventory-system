@@ -3,6 +3,9 @@
 namespace App\Models\Transfers;
 
 use App\Laravue\Models\User;
+use App\Models\Invoice\DeliveryTrip;
+use App\Models\Invoice\DispatchedTransferWaybill;
+use App\Models\Invoice\DispatchedWaybill;
 use App\Models\Warehouse\Warehouse;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -25,14 +28,18 @@ class TransferRequestWaybill extends Model
         return $this->belongsToMany(TransferRequest::class);
     }
 
-    // public function trips()
-    // {
-    //     return $this->belongsToMany(DeliveryTrip::class);
-    // }
-    public function dispatcher()
+    public function trips()
     {
-        return $this->belongsTo(User::class, 'dispatched_by', 'id');
+        return $this->belongsToMany(DeliveryTrip::class);
     }
+    // public function dispatcher()
+    // {
+    //     return $this->belongsTo(User::class, 'dispatched_by', 'id');
+    // }
+    // public function dispatcher()
+    // {
+    //     return $this->hasOne(DispatchedTransferWaybill::class);
+    // }
     public function waybillItems()
     {
         return $this->hasMany(TransferRequestWaybillItem::class, 'transfer_request_waybill_id', 'id');

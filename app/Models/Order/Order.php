@@ -2,11 +2,13 @@
 
 namespace App\Models\Order;
 
-use App\Customer;
+use App\Models\Invoice\Invoice;
 use App\Models\Setting\Currency;
+use App\Models\Warehouse\Site;
 use App\Models\Warehouse\Warehouse;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+
 class Order extends Model
 {
     //
@@ -15,9 +17,13 @@ class Order extends Model
     {
         return $this->belongsTo(Warehouse::class);
     }
-    public function customer()
+    public function invoice()
     {
-        return $this->belongsTo(Customer::class);
+        return $this->hasOne(Invoice::class);
+    }
+    public function site()
+    {
+        return $this->belongsTo(Site::class);
     }
     public function currency()
     {

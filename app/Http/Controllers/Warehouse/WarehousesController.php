@@ -74,6 +74,30 @@ class WarehousesController extends Controller
         $this->logUserActivity($title, $description, $roles);
         return response()->json(compact('warehouse_users'), 200);
     }
+    public function removeUserFromWarehouse(Request $request)
+    {
+        //
+        $user_ids = $request->user_ids;
+        $warehouse_id = $request->warehouse_id;
+        $warehouse = Warehouse::find($warehouse_id);
+        $warehouse->users()->detach($user_ids);
+        $warehouse_users = $warehouse->users;
+        // $warehouse_user = UserWarehouse::where(['user_id'=> $user_id, 'warehouse_id' => $warehouse_id])->first();
+
+        // if (!$warehouse_user) {
+        //     $warehouse_user = new UserWarehouse();
+        //     $warehouse_user->user_id = $user_id;
+        //     $warehouse_user->warehouse_id = $warehouse_id;
+        //     $warehouse_user->save();
+        // }
+        $actor = $this->getUser();
+        $title = "Staff assigned to $warehouse->name";
+        $description = "Staff assigned to $warehouse->name by $actor->name ($actor->email)";
+        //log this activity
+        $roles = ['assistant admin', 'warehouse manager'];
+        $this->logUserActivity($title, $description, $roles);
+        return response()->json(compact('warehouse_users'), 200);
+    }
 
     /**
      * Display the specified resource.
