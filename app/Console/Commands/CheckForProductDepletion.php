@@ -5,8 +5,12 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Carbon\Carbon;
 use App\Http\Traits\GoodsTransferTrait;
+use App\Laravue\Models\User;
 use App\Models\Stock\ItemStockSubBatch;
 use App\Models\Warehouse\Warehouse;
+use Notification;
+use App\Notifications\NotifyProductDepletion;
+use App\Notifications\NotifyWithEmailDB;
 use Illuminate\Http\Request;
 
 class CheckForProductDepletion extends Command
@@ -37,6 +41,49 @@ class CheckForProductDepletion extends Command
         parent::__construct();
     }
 
+    private function notifyProductDepletion($title, $description, $url, $depletions, $roles = [])
+    {
+
+        $url = env('APP_URL') . '/' . $url;
+        $users = $this->setupRecipients($roles);
+        $delay = now()->addMinutes(2);
+        // var_dump($users);
+        $notification = new NotifyProductDepletion($title, $description, $url, $depletions);
+        return Notification::send($users->unique(), $notification); //->delay($delay);
+    }
+    private function setupRecipients($roles = [])
+    {
+        $users = User::whereHas('roles', function ($query) {
+            $query->where('name', '=', 'admin'); // this is the role id inside of this callback
+        })->get();
+
+        if (in_array('assistant admin', $roles)) {
+            $assistant_admin = User::whereHas('roles', function ($query) {
+                $query->where('name', '=', 'assistant admin'); // this is the role id inside of this callback
+            })->get();
+            $users = $users->merge($assistant_admin);
+        }
+        if (in_array('warehouse manager', $roles)) {
+            $warehouse_managers = User::whereHas('roles', function ($query) {
+                $query->where('name', '=', 'warehouse manager'); // this is the role id inside of this callback
+            })->get();
+            $users = $users->merge($warehouse_managers);
+        }
+        if (in_array('stock officer', $roles)) {
+            $stock_officers = User::whereHas('roles', function ($query) {
+                $query->where('name', '=', 'stock officer'); // this is the role id inside of this callback
+            })->get();
+            $users = $users->merge($stock_officers);
+        }
+        if (in_array('warehouse auditor', $roles)) {
+            $auditors = User::whereHas('roles', function ($query) {
+                $query->where('name', '=', 'warehouse auditor'); // this is the role id inside of this callback
+            })->get();
+            $users = $users->merge($auditors);
+        }
+
+        return $users;
+    }
     private function checkForProductDepletion()
     {
         $warehouses = Warehouse::where('id', '!=', 3)->get(); // we don't want virtual warehouse
