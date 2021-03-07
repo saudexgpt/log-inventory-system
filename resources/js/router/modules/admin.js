@@ -21,12 +21,12 @@ const adminRoutes = {
       meta: { title: 'userProfile', noCache: true, permissions: ['manage user'] },
       hidden: true,
     },
-    {
-      path: 'customers',
-      component: () => import('@/app/users/Customer'),
-      name: 'CustomerList',
-      meta: { title: 'Customers', icon: 'el-icon-user', permissions: ['manage user'] },
-    },
+    // {
+    //   path: 'customers',
+    //   component: () => import('@/app/users/Customer'),
+    //   name: 'CustomerList',
+    //   meta: { title: 'Customers', icon: 'el-icon-user', permissions: ['manage user'] },
+    // },
     {
       path: 'users',
       component: () => import('@/app/users/List'),

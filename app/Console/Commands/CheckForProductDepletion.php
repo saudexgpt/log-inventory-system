@@ -1,18 +1,43 @@
 <?php
 
-namespace App\Http\Controllers\Stock;
+namespace App\Console\Commands;
 
-use App\Driver;
-use App\Http\Controllers\Controller;
+use Illuminate\Console\Command;
+use Carbon\Carbon;
 use App\Http\Traits\GoodsTransferTrait;
 use App\Models\Stock\ItemStockSubBatch;
 use App\Models\Warehouse\Warehouse;
 use Illuminate\Http\Request;
 
-class DepletionChecksController extends Controller
+class CheckForProductDepletion extends Command
 {
+
     use GoodsTransferTrait;
-    public function checkForProductDepletion(Request $request)
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'products:depletion';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Command description';
+
+    /**
+     * Create a new command instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        parent::__construct();
+    }
+
+    private function checkForProductDepletion()
     {
         $warehouses = Warehouse::where('id', '!=', 3)->get(); // we don't want virtual warehouse
         $supplying_warehouse = Warehouse::where('is_main', 1)->first();
@@ -77,5 +102,10 @@ class DepletionChecksController extends Controller
         $roles = []; // ['assistant admin', 'warehouse manager', 'warehouse auditor'];
         $this->notifyProductDepletion($title, $description, 'inbound/item-stocks', $depletions, $roles);
         return $depletions;
+    }
+    public function handle()
+    {
+        //
+        $this->checkForProductDepletion();
     }
 }
