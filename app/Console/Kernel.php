@@ -30,7 +30,7 @@ class Kernel extends ConsoleKernel
         // $schedule->command('backup:run');
 
 
-        $schedule->command('products:depletion'); // ->daily()->at('01:00');
+        $schedule->command('products:depletion')->withoutOverlapping(); // ->daily()->at('01:00');
     }
 
     /**
